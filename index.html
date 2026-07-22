@@ -104,6 +104,17 @@ body{
 .form-select{width:100%;padding:13px 40px 13px 44px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--fg);font-size:14px;outline:none;appearance:none;cursor:pointer;transition:border-color .2s,box-shadow .2s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='%23d4af37'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
 .form-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
 .form-select option{background:var(--surface);color:var(--fg)}
+
+/* TERANGIN TOMBOL TANGGAL DI MODE GELAP */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(1.8);
+    cursor: pointer;
+    opacity: 0.9;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 24px;border-radius:var(--radius);font-size:14px;font-weight:700;border:none;cursor:pointer;transition:all .2s}
 .btn-primary{background:linear-gradient(135deg,var(--accent),#fde047);color:#1e293b;width:100%;box-shadow:0 4px 20px var(--accent-glow)}
 .btn-primary:hover{box-shadow:0 6px 30px var(--accent-glow);transform:translateY(-1px)}
@@ -195,7 +206,8 @@ body{
 .custom-table thead th { background: transparent !important; color: var(--accent); border: none; padding: 12px 16px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; text-align: left; }
 .custom-table tbody tr { background: rgba(255,255,255,0.04); transition: all 0.2s; }
 .custom-table tbody tr:hover { background: rgba(0, 200, 255, 0.08); box-shadow: 0 0 15px rgba(0, 200, 255, 0.05); transform: translateY(-2px); }
-.custom-table tbody td { padding: 16px; border: none; color: var(--fg); white-space: nowrap; font-size: 13px; vertical-align: top; }
+/* FIX: ALIGN TABEL JADI TENGAH (MIDDLE) SECARA VERTIKAL BIAR RAPI */
+.custom-table tbody td { padding: 16px; border: none; color: var(--fg); white-space: nowrap; font-size: 13px; vertical-align: middle !important; }
 .custom-table tbody td:first-child { border-left: 4px solid var(--accent); border-radius: 8px 0 0 8px; }
 .custom-table tbody td:last-child { border-radius: 0 8px 8px 0; }
 .badge-status { padding: 6px 12px; border-radius: 6px; font-weight: 700; font-size: 11px; text-transform: uppercase; display: inline-block; }
@@ -236,9 +248,15 @@ body{
 .empty i{font-size:36px;margin-bottom:10px;opacity:.3}
 .empty p{font-size:14px}
 
-.cuti-grid{display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start}
+/* FIX: FORM CUTI DIPERBESAR JADI 460PX */
+.cuti-grid{display:grid;grid-template-columns:460px 1fr;gap:24px;align-items:start}
 @media(max-width:1000px){.cuti-grid{grid-template-columns:1fr}}
 .cuti-form-panel .btn-primary{margin-top:10px}
+
+/* FIX: TOMBOL AKSI CUTI DIRAPIKAN JADI FLEXBOX */
+.action-btn-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.btn-icon-only { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 6px 9px; font-size: 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+.btn-icon-only:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-dim); }
 
 .adduser-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
 @media(max-width:900px){.adduser-grid{grid-template-columns:1fr}}
@@ -865,29 +883,34 @@ function renderCutiList(cutis){
     for(var i=0;i<cutis.length;i++){
         var c=cutis[i];
         var statusClass='badge-pending';if(c.status==='approved')statusClass='badge-approved';else if(c.status==='rejected')statusClass='badge-rejected';
-        var actionBtn='';
+        
+        var actionHtml = '<div class="action-btn-group">';
         if(isLeader){
             if(c.status==='pending'){
-                actionBtn='<button class="btn-success-sm" onclick="approveCuti(\''+c.id+'\')"><i class="fas fa-check"></i> Approve</button><button class="btn-danger-sm" onclick="rejectCuti(\''+c.id+'\')"><i class="fas fa-times"></i> Reject</button><br>';
+                actionHtml += '<button class="btn-success-sm" onclick="approveCuti(\''+c.id+'\')"><i class="fas fa-check"></i> Approve</button>';
+                actionHtml += '<button class="btn-danger-sm" onclick="rejectCuti(\''+c.id+'\')"><i class="fas fa-times"></i> Reject</button>';
             }
-            actionBtn += '<button class="btn-danger-sm" onclick="deleteCuti(\''+c.id+'\')"><i class="fas fa-trash"></i> Hapus</button>';
+            actionHtml += '<button class="btn-icon-only" onclick="deleteCuti(\''+c.id+'\')" title="Hapus"><i class="fas fa-trash"></i></button>';
+        } else {
+            actionHtml += '<span style="color:var(--muted); font-size:12px;">-</span>';
         }
+        actionHtml += '</div>';
         
-        var statusHtml = '<span class="badge-status '+statusClass+'" style="text-transform:capitalize">'+c.status+'</span>';
+        var statusHtml = '<span class="badge-status '+statusClass+'" style="text-transform:capitalize; display:inline-block; margin-bottom:4px;">'+c.status+'</span>';
         if(c.status === 'rejected' && c.rejectReason) {
-            statusHtml += '<div style="font-size:11px; color:var(--danger); margin-top:6px; max-width:180px; white-space:normal; font-style:italic; opacity:0.9;">"'+c.rejectReason+'"</div>';
+            statusHtml += '<div style="font-size:10px; color:var(--danger); max-width:150px; white-space:normal; font-style:italic; opacity:0.9; line-height:1.3;">"'+c.rejectReason+'"</div>';
         }
         
         rows+='<tr>'+
             '<td style="font-weight:700">'+c.nama+'<br><small style="color:var(--muted);font-weight:500;text-transform:capitalize">'+c.jabatan+'</small></td>'+
             '<td style="font-variant-numeric:tabular-nums; white-space:nowrap;">'+c.startDate+' <span style="color:var(--muted); font-weight:400;">s/d</span> '+c.endDate+'</td>'+
             '<td><span class="badge-jenis-cuti">'+c.jenisCuti+'</span></td>'+
-            '<td style="text-align:center;font-weight:800;color:var(--accent);font-size:15px; white-space:nowrap;">'+c.totalHari+' Hari</td>'+
+            '<td style="text-align:center; font-weight:800; color:var(--accent); font-size:15px; white-space:nowrap;">'+c.totalHari+' Hari</td>'+
             '<td>'+statusHtml+'</td>'+
-            '<td>'+actionBtn+'</td>'+
+            '<td>'+actionHtml+'</td>'+
         '</tr>';
     }
-    container.innerHTML='<table class="custom-table"><thead><tr><th>Nama Staff</th><th>Tanggal Cuti</th><th>Jenis Cuti</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    container.innerHTML='<table class="custom-table"><thead><tr><th>Nama Staff</th><th>Tanggal Cuti</th><th>Jenis Cuti</th><th style="text-align:center;">Total</th><th>Status</th><th>Aksi</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
 function approveCuti(id){
