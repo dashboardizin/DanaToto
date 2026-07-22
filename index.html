@@ -34,7 +34,7 @@
 }
 *{margin:0;padding:0;box-sizing:border-box; font-family: var(--font) !important;}
 body{
-  background: linear-gradient(135deg, #0f172a 0%, #1a1c2e 50%, #15233b 100%); /* Gradasi lembut agar tidak gelap pekat */
+  background: linear-gradient(135deg, #0f172a 0%, #1a1c2e 50%, #15233b 100%);
   color:var(--fg);
   min-height:100vh;
   overflow-x:hidden;
@@ -43,7 +43,6 @@ body{
 ::-webkit-scrollbar-track{background:var(--surface)}
 ::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px}
 
-/* FIX: BACKGROUND HANYA DI HALAMAN LOGIN */
 #login-page{
   min-height:100vh;
   display:flex;
@@ -58,40 +57,23 @@ body{
   padding: 20px;
 }
 
-/* EFEK LAMPU HIDUP DI LOGIN & KOTAK PERSEGI PANJANG */
 .login-card{
   position:relative;z-index:2;
   background:rgba(15, 23, 42, 0.85);
   backdrop-filter:blur(24px);
   border:1px solid rgba(0, 200, 255, 0.3);
-  border-radius:24px; /* BULAT LEBIH HALUS */
-  padding:40px 50px; /* LEBAR PADDED */
-  width:480px; /* PERSEGI PANJANG */
+  border-radius:24px;
+  padding:40px 50px;
+  width:480px;
   max-width:92vw;
   box-shadow: 0 0 40px rgba(0, 200, 255, 0.15), 0 0 80px rgba(212, 175, 55, 0.08);
 }
 .login-logo{text-align:center;margin-bottom:28px}
 .login-logo img{
-  max-width: 180px;
-  width: 100%;
-  height: auto;
-  margin: 0 auto 15px;
-  display: block;
-  filter: drop-shadow(0 0 15px rgba(0, 200, 255, 0.4));
+  max-width: 180px; width: 100%; height: auto; margin: 0 auto 15px; display: block; filter: drop-shadow(0 0 15px rgba(0, 200, 255, 0.4));
 }
 .login-logo h1{
-  font-size:22px;
-  font-weight:800;
-  letter-spacing:1px;
-  color: #ffffff;
-  text-transform:uppercase;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-  flex-wrap:wrap;
-  text-align:center;
-  text-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
+  font-size:22px; font-weight:800; letter-spacing:1px; color: #ffffff; text-transform:uppercase; display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; text-align:center; text-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
 }
 .login-logo p{color:var(--muted);font-size:13px;margin-top:8px; font-weight: 500;}
 .form-group{margin-bottom:18px}
@@ -105,15 +87,10 @@ body{
 .form-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
 .form-select option{background:var(--surface);color:var(--fg)}
 
-/* TERANGIN TOMBOL TANGGAL DI MODE GELAP */
 input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: invert(1) brightness(1.8);
-    cursor: pointer;
-    opacity: 0.9;
+    filter: invert(1) brightness(1.8); cursor: pointer; opacity: 0.9;
 }
-input[type="date"]::-webkit-calendar-picker-indicator:hover {
-    opacity: 1;
-}
+input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 24px;border-radius:var(--radius);font-size:14px;font-weight:700;border:none;cursor:pointer;transition:all .2s}
 .btn-primary{background:linear-gradient(135deg,var(--accent),#fde047);color:#1e293b;width:100%;box-shadow:0 4px 20px var(--accent-glow)}
@@ -206,7 +183,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .custom-table thead th { background: transparent !important; color: var(--accent); border: none; padding: 12px 16px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; text-align: left; }
 .custom-table tbody tr { background: rgba(255,255,255,0.04); transition: all 0.2s; }
 .custom-table tbody tr:hover { background: rgba(0, 200, 255, 0.08); box-shadow: 0 0 15px rgba(0, 200, 255, 0.05); transform: translateY(-2px); }
-/* FIX: ALIGN TABEL JADI TENGAH (MIDDLE) SECARA VERTIKAL BIAR RAPI */
 .custom-table tbody td { padding: 16px; border: none; color: var(--fg); white-space: nowrap; font-size: 13px; vertical-align: middle !important; }
 .custom-table tbody td:first-child { border-left: 4px solid var(--accent); border-radius: 8px 0 0 8px; }
 .custom-table tbody td:last-child { border-radius: 0 8px 8px 0; }
@@ -248,12 +224,11 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .empty i{font-size:36px;margin-bottom:10px;opacity:.3}
 .empty p{font-size:14px}
 
-/* FIX: FORM CUTI DIPERBESAR JADI 460PX */
-.cuti-grid{display:grid;grid-template-columns:460px 1fr;gap:24px;align-items:start}
+/* FIX: FORM CUTI DIPERBESAR JADI 520PX */
+.cuti-grid{display:grid;grid-template-columns:520px 1fr;gap:24px;align-items:start}
 @media(max-width:1000px){.cuti-grid{grid-template-columns:1fr}}
 .cuti-form-panel .btn-primary{margin-top:10px}
 
-/* FIX: TOMBOL AKSI CUTI DIRAPIKAN JADI FLEXBOX */
 .action-btn-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .btn-icon-only { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 6px 9px; font-size: 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
 .btn-icon-only:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-dim); }
@@ -312,7 +287,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     <i class="fas fa-hard-drive"></i><span>Mode Lokal</span>
 </div>
 
-<!-- MODAL REJECT CUTI -->
 <div class="modal-overlay" id="reject-modal">
     <div class="modal-box">
         <h3><i class="fas fa-times-circle"></i> Reject Pengajuan Cuti</h3>
@@ -326,7 +300,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     </div>
 </div>
 
-<!-- LOGIN -->
 <div id="login-page">
     <div class="login-card">
         <div class="login-logo">
@@ -349,7 +322,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     </div>
 </div>
 
-<!-- APP -->
 <div id="app">
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <aside id="sidebar">
@@ -447,7 +419,8 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 })();
 
 /* ===== VARIABEL GLOBAL ===== */
-var APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbzJFFmrABl_OGNglKCZFs5kDmd3k8PMKZbfq-b2RKu0lFnyeoGzVU11z00HrRW07urQRA/exec';
+// GANTI URL INI DENGAN URL GOOGLE APPS SCRIPT MILIKMU (LIHAT LANGKAH 1 DI ATAS)
+var APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycby3_JiPLxf4sO_XNd-pCbT2FdnXhxSNfcLv9GQn3cJ54dg6nYUEjwL8Tb1ZIMqld7qEfA/exec'; 
 var JOBDESK_LIST=['BUANG DANA BANK','DEPO BCA','DEPO BNI','DEPO BRI','DEPO MANDIRI','DEPO EWALLET','WD BCA','WD BNI','WD BRI','WD MANDIRI','WD EWALLET','LINE UTAMA','WD LINKAJA','LINE BACKUP','LIVECHAT'];
 var JENIS_IZIN=[
     {label:'AMBIL MAKAN (12 Menit)',value:'MAKAN',durasi:13, labelDurasi:12}, 
@@ -456,13 +429,13 @@ var JENIS_IZIN=[
 var JENIS_CUTI=['Cuti Kerja','Cuti Lokal (Tidak Ambil Paspor)','Cuti Lokal (Ambil Paspor)','Cuti Indo (Ambil Paspor)'];
 var JABATAN_LIST=['Kasir','Kapten','CS Livechat','CS Line'];
 var DEFAULT_MAX_KELUAR={'Kasir':2,'Kapten':1,'CS Livechat':1,'CS Line':1};
-var DEFAULT_MAX_CUTI={'Kasir':3,'Kapten':2,'CS Livechat':2,'CS Line':2}; /* SETTINGAN CUTI BARU */
+var DEFAULT_MAX_CUTI={'Kasir':3,'Kapten':2,'CS Livechat':2,'CS Line':2};
 var ADMIN_BAWAAN={id:'admin_bawaan',nama:'Administrator',username:'admin',password:'admin123',ip:'*',jabatan:'Admin',role:'admin',createdAt:'2024-01-01T00:00:00.000Z'};
 var VZQA_USER={id:'vzqa_default',nama:'Vzqaaganabadhy',username:'vzqaaganabadhy',password:'vzqaaganabadhy',ip:'*',jabatan:'Kasir',role:'staff',createdAt:'2024-01-01T00:00:00.000Z'};
 var currentUser=null;var detectedIP=null;var timerInterval=null;
 var dashboardTimerInterval=null;var izinActiveInterval=null;var rejectCutiId=null;
 
-/* ===== LOCAL STORAGE ===== */
+/* ===== LOCAL STORAGE (HANYA UNTUK CACHE SEMENTARA) ===== */
 function lsG(k,f){try{var v=localStorage.getItem('iz_'+k);return v?JSON.parse(v):(f||null)}catch(e){return f||null}}
 function lsS(k,v){try{localStorage.setItem('iz_'+k,JSON.stringify(v))}catch(e){}}
 function lsD(k){try{localStorage.removeItem('iz_'+k)}catch(e){}}
@@ -536,15 +509,14 @@ function updateAdminVis(){
     var e2=document.querySelectorAll('.admin-only-block');for(var j=0;j<e2.length;j++){if(isPrivileged)e2[j].classList.add('visible');else e2[j].classList.remove('visible');}
 }
 
+/* ===== SYNC DARI SERVER (CLOUD) ===== */
 function syncFromServer(){
     fetchTO(APPS_SCRIPT_URL+'?action=getUsers',{},6000)
     .then(function(r){return r.json()})
     .then(function(d){
         if(d.success!==undefined)updateConn(true);
         if(d.success&&d.users&&d.users.length>0){
-            var localUsers=lsG('users',[]);var serverUsers=d.users;
-            for(var i=0;i<serverUsers.length;i++){var found=false;for(var j=0;j<localUsers.length;j++){if(localUsers[j].id===serverUsers[i].id||localUsers[j].username.toLowerCase()===(serverUsers[i].username||'').toLowerCase()){found=true;break;}}if(!found){localUsers.push(serverUsers[i]);}}
-            lsS('users',localUsers);
+            lsS('users',d.users); // TIMPA DATA LOKAL DENGAN DATA CLOUD
         }
     }).catch(function(){updateConn(false);});
 
@@ -552,9 +524,7 @@ function syncFromServer(){
     .then(function(r){return r.json()})
     .then(function(d){
         if(d.success&&d.records&&d.records.length>0){
-            var localRecs=lsG('records',[]);var serverRecs=d.records;
-            for(var i=0;i<serverRecs.length;i++){var found=false;for(var j=0;j<localRecs.length;j++){if(localRecs[j].id===serverRecs[i].id){found=true;break;}}if(!found){localRecs.push(serverRecs[i]);}}
-            lsS('records',localRecs);
+            lsS('records',d.records);
         }
     }).catch(function(){});
 }
@@ -562,7 +532,7 @@ function syncFromServer(){
 function init(){
     pastikanAdminAda();
     detectIP();
-    syncFromServer();
+    syncFromServer(); // AMBIL DATA DARI CLOUD SAAT BUKA WEB
     var saved=lsG('currentUser');if(saved){currentUser=saved;showApp();}else{showLogin();}
 }
 function showLogin(){document.getElementById('login-page').style.display='flex';document.getElementById('app').classList.remove('active');document.getElementById('login-username').focus();}
@@ -843,7 +813,6 @@ function submitCuti(e){
     if(!start||!end||!jenis){showMsg(msgEl,'error','Semua field harus diisi');return;}
     if(new Date(end) < new Date(start)){showMsg(msgEl,'error','Tanggal selesai tidak boleh sebelum tanggal mulai');return;}
     
-    /* CEK KUOTA CUTI BULAN INI */
     var myJabatan = currentUser ? currentUser.jabatan || 'Staff' : 'Staff';
     var maxCutiSettings = getMaxCuti();
     var maxForMe = maxCutiSettings[myJabatan] || 0;
@@ -978,9 +947,7 @@ function doFilterRekapan(from,to){
     .then(function(r){return r.json()})
     .then(function(d){
         if(d.success&&d.records){
-            updateConn(true);var localRecs=lsG('records',[]);var serverRecs=d.records;
-            for(var i=0;i<serverRecs.length;i++){var found=false;for(var j=0;j<localRecs.length;j++){if(localRecs[j].id===serverRecs[i].id){found=true;break;}}if(!found){localRecs.push(serverRecs[i]);}}
-            lsS('records',localRecs);var mergedRecs=localRecs;
+            updateConn(true);lsS('records',d.records);var mergedRecs=d.records;
             if(from)mergedRecs=mergedRecs.filter(function(r){return r.tanggal>=from});if(to)mergedRecs=mergedRecs.filter(function(r){return r.tanggal<=to});
             renderRekapanTable(mergedRecs);
         }else{renderRekapanTable(recs);}
