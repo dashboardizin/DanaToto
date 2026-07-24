@@ -422,8 +422,11 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
                                     <div class="form-group"><label>👤 Username</label><div class="input-wrap"><i class="fas fa-at field-icon"></i><input type="text" id="au-username" class="form-input" placeholder="Username untuk login" required></div></div>
                                     <div class="form-group"><label>🔑 Password</label><div class="input-wrap"><i class="fas fa-key field-icon"></i><input type="text" id="au-password" class="form-input" placeholder="Password untuk login" required></div></div>
                                     <div class="form-group"><label>🌐 IP Address</label><div class="input-wrap"><i class="fas fa-network-wired field-icon"></i><input type="text" id="au-ip" class="form-input" placeholder="Contoh: 192.168.1.5 atau * " required></div></div>
-                                    <div class="form-group"><label>💼 Jabatan</label><select id="au-jabatan" class="form-select" required><option value="">-- Pilih Jabatan --</option><option value="Kasir">Kasir</option><option value="Kapten">Kapten</option><option value="CS Livechat">CS Livechat</option><option value="CS Line">CS Line</option></select></div>
+                                    
                                     <div class="form-group"><label>🛡️ Role</label><select id="au-role" class="form-select" required><option value="staff">Staff</option><option value="leader">Leader</option></select></div>
+                                    
+                                    <div class="form-group" id="au-jabatan-group"><label>💼 Jabatan</label><select id="au-jabatan" class="form-select"><option value="">-- Pilih Jabatan --</option><option value="Kasir">Kasir</option><option value="Kapten">Kapten</option><option value="CS Livechat">CS Livechat</option><option value="CS Line">CS Line</option></select></div>
+                                    
                                     <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Tambah Staff</button>
                                     <div id="au-error" class="msg msg-error"><i class="fas fa-circle-exclamation"></i><span></span></div>
                                     <div id="au-success" class="msg msg-success"><i class="fas fa-circle-check"></i><span></span></div>
@@ -549,7 +552,6 @@ function timeStr(d){return('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).
 function showMsg(el,t,m){if(!el)return;el.className='msg msg-'+t+' show';el.querySelector('span').textContent=m;setTimeout(function(){el.classList.remove('show')},8000);}
 function hideMsg(el){if(el)el.classList.remove('show');}
 
-/* DETEKSI IP DENGAN FALLBACK (AGAR TIDAK NULL) */
 function detectIP(){
     return fetchTO('https://api.ipify.org?format=json',{},3000)
     .then(function(r){return r.json()})
@@ -689,7 +691,6 @@ function showLogin(){document.getElementById('login-page').style.display='flex';
 function showApp(){document.getElementById('login-page').style.display='none';document.getElementById('app').classList.add('active');updateSidebar();updateAdminVis();navigateTo('dashboard');resumeTimer();}
 function updateSidebar(){if(!currentUser)return;var n=currentUser.nama||'User';var ini=n.split(' ').map(function(w){return w[0]}).join('').toUpperCase().substring(0,2);document.getElementById('sb-avatar').textContent=ini;document.getElementById('sb-nama').textContent=n;document.getElementById('sb-role').textContent=currentUser.role==='admin'?'Administrator':(currentUser.role==='leader'?'Leader':'Staff');}
 
-/* ===== LOGIN: LOCAL FIRST AGAR INSTAN & TIDAK LAGI LAMA ===== */
 document.getElementById('login-form').addEventListener('submit',function(e){
     e.preventDefault();
     var uI=document.getElementById('login-username');var pI=document.getElementById('login-password');var err=document.getElementById('login-error');var btn=document.getElementById('login-btn');
@@ -697,7 +698,6 @@ document.getElementById('login-form').addEventListener('submit',function(e){
     var un=uI.value.trim();var pw=pI.value.trim();
     if(!un||!pw){uI.classList.add('has-error');pI.classList.add('has-error');showMsg(err,'error','Username dan password harus diisi');return;}
     
-    // 1. CEK LOKAL DULU (INSTAN, TANPA LOADING)
     var localUsers = lsG('users', []);
     if(!Array.isArray(localUsers)) localUsers = [];
     var localFound = null;
@@ -709,20 +709,17 @@ document.getElementById('login-form').addEventListener('submit',function(e){
     }
     
     if(localFound && localFound.password === pw) {
-        // Password cocok, cek IP lokal
         detectIP().then(function(ip) {
             if(localFound.ip && localFound.ip !== '*' && localFound.ip !== '0.0.0.0' && ip && ip !== localFound.ip) {
                  showMsg(err, 'error', 'IP tidak sesuai. IP Anda: '+ip+', IP terdaftar: '+localFound.ip+'. Jika IP sering berubah, gunakan * di Set IP.');
             } else {
                  doLogin(localFound, btn, uI, pI);
-                 // Sync ke server di background (tanpa nunggu)
                  fetchTO(APPS_SCRIPT_URL+'?action=login&username='+encodeURIComponent(un)+'&password='+encodeURIComponent(pw)+'&ip='+encodeURIComponent(ip||''),{},5000).then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);}).catch(function(){updateConn(false);});
              }
         });
         return;
     }
 
-    // 2. JIKA TIDAK ADA DI LOKAL, COBA KE SERVER
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Sinkron Server...';
     detectIP().then(function(ip) {
@@ -786,7 +783,6 @@ var navItems=document.querySelectorAll('.nav-item[data-page]');for(var n=0;n<nav
 document.getElementById('mobile-toggle').addEventListener('click',function(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebar-overlay').classList.toggle('show');});
 document.getElementById('sidebar-overlay').addEventListener('click',function(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('show');});
 
-/* ===== TABEL STAFF SEDANG KELUAR (ICON DIPERBAIKI JADI fa-door-open) ===== */
 function buildActiveStaffTableHtml(activeIzins){
     if(!activeIzins||activeIzins.length===0){
         return '<div class="active-empty" style="padding: 30px 20px;"><i class="fas fa-check-circle"></i><p>Semua staff sedang bertugas, tidak ada yang izin keluar saat ini.</p></div>';
@@ -824,7 +820,6 @@ function buildActiveStaffTableHtml(activeIzins){
     '</table>';
 }
 
-/* ===== DASHBOARD ===== */
 function renderDashboard(){
     if(dashboardTimerInterval){clearInterval(dashboardTimerInterval);dashboardTimerInterval=null;}
     var page=document.getElementById('page-dashboard');var users=lsG('users',[]);if(!Array.isArray(users))users=[];var allRecs=lsG('records',[]);if(!Array.isArray(allRecs))allRecs=[];var today=todayStr();
@@ -856,7 +851,6 @@ function renderDashboard(){
     }
 }
 
-/* ===== DASHBOARD IZIN ===== */
 function renderIzin(){
     if(izinActiveInterval){clearInterval(izinActiveInterval);izinActiveInterval=null;}
     var page=document.getElementById('page-izin');
@@ -996,7 +990,6 @@ function tickTimer(){
 }
 function updateBadge(){var badge=document.getElementById('badge-aktif');var activeIzins=lsG('activeIzins',[]);var hasActive=false;if(currentUser){for(var i=0;i<activeIzins.length;i++){if(activeIzins[i].userId===currentUser.id){hasActive=true;break;}}}if(badge)badge.style.display=hasActive?'inline':'none';}
 
-/* ===== PENGAJUAN CUTI ===== */
 function renderCuti(){
     var page=document.getElementById('page-cuti');
     var cutis=lsG('leaveRequests',[]);if(!Array.isArray(cutis))cutis=[];
@@ -1177,7 +1170,6 @@ function deleteCuti(id){
     renderCuti();
 }
 
-/* ===== REKAPAN (TANPA LOADING LAMA, LANGSUNG TAMPIL) ===== */
 function renderRekapan(){
     var today=new Date();var fromDef=new Date(today.getFullYear(),today.getMonth(),1);
     var fromStr=fromDef.toISOString().split('T')[0];var toStr=todayStr();
@@ -1191,10 +1183,8 @@ function doFilterRekapan(from,to){
     if(from)localFiltered=localFiltered.filter(function(r){return r.tanggal>=from});
     if(to)localFiltered=localFiltered.filter(function(r){return r.tanggal<=to});
     
-    // RENDER LOKAL LANGSUNG (NO LOADING OVERLAY)
     renderRekapanTable(localFiltered);
 
-    // FETCH SERVER DI LATAR BELAKANG
     fetchTO(APPS_SCRIPT_URL+'?action=getRecords&from='+(from||'')+'&to='+(to||''),{},5000)
     .then(function(r){return r.json()})
     .then(function(d){
@@ -1259,7 +1249,6 @@ function deleteRecord(id){
     renderRekapanTable(mergedRecs);
 }
 
-/* ===== ADD USER ===== */
 function renderAddUser(){renderSettingsPanel();renderUserTable();}
 
 function renderSettingsPanel(){
@@ -1328,6 +1317,24 @@ function deleteUser(uid){
     renderUserTable();
 }
 
+// ===== TOGGLE JABATAN BERDASARKAN ROLE =====
+var auRole = document.getElementById('au-role');
+var auJabatanGroup = document.getElementById('au-jabatan-group');
+var auJabatan = document.getElementById('au-jabatan');
+if(auRole && auJabatanGroup && auJabatan) {
+    auRole.addEventListener('change', function() {
+        if(this.value === 'leader') {
+            auJabatanGroup.style.display = 'none';
+            auJabatan.removeAttribute('required');
+            auJabatan.value = 'Leader'; // Set default value agar lolos validasi
+        } else {
+            auJabatanGroup.style.display = 'block';
+            auJabatan.setAttribute('required', 'required');
+            auJabatan.value = '';
+        }
+    });
+}
+
 document.getElementById('adduser-form').addEventListener('submit',function(e){
     e.preventDefault();
     var errEl=document.getElementById('au-error');var succEl=document.getElementById('au-success');hideMsg(errEl);hideMsg(succEl);
@@ -1340,10 +1347,12 @@ document.getElementById('adduser-form').addEventListener('submit',function(e){
     fetchTO(APPS_SCRIPT_URL+'?action=addUser',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(newUser)},5000).then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);}).catch(function(){});
     showMsg(succEl,'success','Staff '+nama+' berhasil ditambahkan!');
     document.getElementById('au-nama').value='';document.getElementById('au-username').value='';document.getElementById('au-password').value='';document.getElementById('au-ip').value='';document.getElementById('au-jabatan').value='';document.getElementById('au-role').value='staff';
+    // Reset tampilan form jabatan
+    auJabatanGroup.style.display = 'block';
+    auJabatan.setAttribute('required', 'required');
     renderUserTable();
 });
 
-/* ===== SET IP ===== */
 function renderSetIp(){
     var container=document.getElementById('setip-user-list');
     if(container){
@@ -1367,7 +1376,6 @@ document.getElementById('setip-form').addEventListener('submit',function(e){
     var count=0;
     for(var i=0;i<users.length;i++){
         users[i].ip=ip;count++;
-        // Kirim update satu per satu agar pasti masuk ke Apps Script
         fetchTO(APPS_SCRIPT_URL+'?action=addUser',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(users[i])},5000).catch(function(){});
     }
     lsS('users',users);
