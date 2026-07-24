@@ -549,7 +549,19 @@ function timeStr(d){return('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).
 function showMsg(el,t,m){if(!el)return;el.className='msg msg-'+t+' show';el.querySelector('span').textContent=m;setTimeout(function(){el.classList.remove('show')},8000);}
 function hideMsg(el){if(el)el.classList.remove('show');}
 
-function detectIP(){return fetchTO('https://api.ipify.org?format=json',{},3000).then(function(r){return r.json()}).then(function(d){detectedIP=d.ip;return d.ip}).catch(function(){detectedIP=null;return null}).finally(function(){var el=document.getElementById('topbar-ip');if(el)el.textContent=detectedIP||'tidak terdeteksi';});}
+/* DETEKSI IP DENGAN FALLBACK (AGAR TIDAK NULL) */
+function detectIP(){
+    return fetchTO('https://api.ipify.org?format=json',{},3000)
+    .then(function(r){return r.json()})
+    .then(function(d){detectedIP=d.ip;return d.ip})
+    .catch(function(){
+        return fetchTO('https://ipapi.co/json/',{},3000)
+        .then(function(r){return r.json()})
+        .then(function(d){detectedIP=d.ip;return d.ip})
+        .catch(function(){detectedIP=null;return null;});
+    })
+    .finally(function(){var el=document.getElementById('topbar-ip');if(el)el.textContent=detectedIP||'tidak terdeteksi';});
+}
 
 function getMaxKeluar(){
     var settings=lsG('maxKeluar',DEFAULT_MAX_KELUAR);
@@ -580,7 +592,6 @@ function updateAdminVis(){
     var e2=document.querySelectorAll('.admin-only-block');for(var j=0;j<e2.length;j++){if(isPrivileged)e2[j].classList.add('show-menu');else e2[j].classList.remove('show-menu');}
 }
 
-/* SYNC DENGAN DELAY AGAR TIDAK LAG */
 function syncFromServer(){
     setTimeout(function(){
         fetchTO(APPS_SCRIPT_URL+'?action=getUsers',{},5000)
@@ -678,45 +689,80 @@ function showLogin(){document.getElementById('login-page').style.display='flex';
 function showApp(){document.getElementById('login-page').style.display='none';document.getElementById('app').classList.add('active');updateSidebar();updateAdminVis();navigateTo('dashboard');resumeTimer();}
 function updateSidebar(){if(!currentUser)return;var n=currentUser.nama||'User';var ini=n.split(' ').map(function(w){return w[0]}).join('').toUpperCase().substring(0,2);document.getElementById('sb-avatar').textContent=ini;document.getElementById('sb-nama').textContent=n;document.getElementById('sb-role').textContent=currentUser.role==='admin'?'Administrator':(currentUser.role==='leader'?'Leader':'Staff');}
 
-/* ===== LOGIN (CEK LOCAL DULU BIAR CEPAT, LANJUT SERVER) ===== */
+/* ===== LOGIN: LOCAL FIRST AGAR INSTAN & TIDAK LAGI LAMA ===== */
 document.getElementById('login-form').addEventListener('submit',function(e){
     e.preventDefault();
     var uI=document.getElementById('login-username');var pI=document.getElementById('login-password');var err=document.getElementById('login-error');var btn=document.getElementById('login-btn');
     hideMsg(err);uI.classList.remove('has-error');pI.classList.remove('has-error');
     var un=uI.value.trim();var pw=pI.value.trim();
     if(!un||!pw){uI.classList.add('has-error');pI.classList.add('has-error');showMsg(err,'error','Username dan password harus diisi');return;}
-    btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Memverifikasi...';
     
-    // Ambil IP nya pakai timeout pendek
-    var ipPromise = detectIP();
-    ipPromise.then(function(ip){
-        fetchTO(APPS_SCRIPT_URL+'?action=login&username='+encodeURIComponent(un)+'&password='+encodeURIComponent(pw)+'&ip='+encodeURIComponent(ip||''),{},4000) // TIMEOUT 4 DETIK BIAR GA LAMA
-        .then(function(r){return r.json()}).then(function(d){
-            btn.disabled=false;btn.innerHTML='<i class="fas fa-right-to-bracket"></i> Masuk';
+    // 1. CEK LOKAL DULU (INSTAN, TANPA LOADING)
+    var localUsers = lsG('users', []);
+    if(!Array.isArray(localUsers)) localUsers = [];
+    var localFound = null;
+    for(var i=0; i<localUsers.length; i++) {
+        if(localUsers[i].username.toLowerCase() === un.toLowerCase()) {
+            localFound = localUsers[i];
+            break;
+        }
+    }
+    
+    if(localFound && localFound.password === pw) {
+        // Password cocok, cek IP lokal
+        detectIP().then(function(ip) {
+            if(localFound.ip && localFound.ip !== '*' && localFound.ip !== '0.0.0.0' && ip && ip !== localFound.ip) {
+                 showMsg(err, 'error', 'IP tidak sesuai. IP Anda: '+ip+', IP terdaftar: '+localFound.ip+'. Jika IP sering berubah, gunakan * di Set IP.');
+            } else {
+                 doLogin(localFound, btn, uI, pI);
+                 // Sync ke server di background (tanpa nunggu)
+                 fetchTO(APPS_SCRIPT_URL+'?action=login&username='+encodeURIComponent(un)+'&password='+encodeURIComponent(pw)+'&ip='+encodeURIComponent(ip||''),{},5000).then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);}).catch(function(){updateConn(false);});
+             }
+        });
+        return;
+    }
+
+    // 2. JIKA TIDAK ADA DI LOKAL, COBA KE SERVER
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Sinkron Server...';
+    detectIP().then(function(ip) {
+        fetchTO(APPS_SCRIPT_URL+'?action=login&username='+encodeURIComponent(un)+'&password='+encodeURIComponent(pw)+'&ip='+encodeURIComponent(ip||''), {}, 5000)
+        .then(function(r){return r.json()})
+        .then(function(d){
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> Masuk';
             if(d.success){
                 updateConn(true);
-                currentUser=d.user;lsS('currentUser',d.user);
-                var lu=lsG('users',[]);if(!Array.isArray(lu))lu=[];var ex=false;for(var j=0;j<lu.length;j++){if(lu[j].id===d.user.id){ex=true;break;}}if(!ex){lu.push(d.user);lsS('users',lu);}
-                uI.value='';pI.value='';showApp();
-            } else {
-                uI.classList.add('has-error');pI.classList.add('has-error');showMsg(err,'error',d.message||'Username dan password salah');
-            }
-        }).catch(function(){
-            // FALLBACK KE LOCAL
-            btn.disabled=false;btn.innerHTML='<i class="fas fa-right-to-bracket"></i> Masuk';
-            updateConn(false);
-            var localUsers=lsG('users',[]);if(!Array.isArray(localUsers))localUsers=[];var localFound=null;
-            for(var i=0;i<localUsers.length;i++){if(localUsers[i].username.toLowerCase()===un.toLowerCase()){localFound=localUsers[i];break;}}
-            if(localFound && localFound.password===pw){
-                /* Cek IP lokal tapi kalau IP null(gagal deteksi) langsung masuk */
-                if(localFound.ip && localFound.ip !== '*' && localFound.ip !== '0.0.0.0' && ip && ip !== localFound.ip){
-                     showMsg(err,'error','IP tidak sesuai. IP Anda: '+ip+', IP terdaftar: '+localFound.ip);
-                } else {
-                     doLogin(localFound,btn,uI,pI);
+                currentUser = d.user;
+                lsS('currentUser', d.user);
+                var lu = lsG('users', []);
+                if(!Array.isArray(lu)) lu = [];
+                var ex = false;
+                for(var j=0; j<lu.length; j++) {
+                    if(lu[j].id === d.user.id) {
+                        lu[j] = d.user;
+                        ex = true;
+                        break;
+                    }
                 }
+                if(!ex) lu.push(d.user);
+                lsS('users', lu);
+                uI.value = '';
+                pI.value = '';
+                showApp();
             } else {
-                uI.classList.add('has-error');pI.classList.add('has-error');showMsg(err,'error','Koneksi gagal & data tidak ditemukan lokal');
+                uI.classList.add('has-error');
+                pI.classList.add('has-error');
+                showMsg(err, 'error', d.message || 'Username dan password salah');
             }
+        })
+        .catch(function(){
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> Masuk';
+            updateConn(false);
+            uI.classList.add('has-error');
+            pI.classList.add('has-error');
+            showMsg(err, 'error', 'Server tidak merespon & data tidak ditemukan lokal');
         });
     });
 });
@@ -740,7 +786,7 @@ var navItems=document.querySelectorAll('.nav-item[data-page]');for(var n=0;n<nav
 document.getElementById('mobile-toggle').addEventListener('click',function(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebar-overlay').classList.toggle('show');});
 document.getElementById('sidebar-overlay').addEventListener('click',function(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('show');});
 
-/* ===== TABEL STAFF SEDANG KELUAR (ICON DIPERBAIKI) ===== */
+/* ===== TABEL STAFF SEDANG KELUAR (ICON DIPERBAIKI JADI fa-door-open) ===== */
 function buildActiveStaffTableHtml(activeIzins){
     if(!activeIzins||activeIzins.length===0){
         return '<div class="active-empty" style="padding: 30px 20px;"><i class="fas fa-check-circle"></i><p>Semua staff sedang bertugas, tidak ada yang izin keluar saat ini.</p></div>';
@@ -796,7 +842,7 @@ function renderDashboard(){
         '</div>'+
         '<div class="panel active-staff-panel" style="margin-top:0">'+
             '<div class="panel-header">'+
-                '<h3><i class="fas fa-door-open"></i> Staff Sedang Izin Keluar</h3>'+ /* GANTI ICON INI */
+                '<h3><i class="fas fa-door-open"></i> Staff Sedang Izin Keluar</h3>'+
                 '<span class="jabatan-count-badge">'+activeIzins.length+' orang keluar</span>'+
             '</div>'+
             '<div class="table-wrap" id="active-staff-list">'+activeStaffHtml+'</div>'+
@@ -819,7 +865,7 @@ function renderIzin(){
     
     var activeStaffHtml = buildActiveStaffTableHtml(activeIzins);
     var html = '<div class="panel active-staff-panel" style="margin-bottom: 24px;">'+
-        '<div class="panel-header"><h3><i class="fas fa-door-open"></i> Staff Sedang Izin Keluar</h3><span class="jabatan-count-badge" id="izin-active-badge">'+activeIzins.length+' orang keluar</span></div>'+ /* GANTI ICON INI */
+        '<div class="panel-header"><h3><i class="fas fa-door-open"></i> Staff Sedang Izin Keluar</h3><span class="jabatan-count-badge" id="izin-active-badge">'+activeIzins.length+' orang keluar</span></div>'+
         '<div class="table-wrap" id="izin-active-list">'+activeStaffHtml+'</div>'+
     '</div>';
 
@@ -1131,7 +1177,7 @@ function deleteCuti(id){
     renderCuti();
 }
 
-/* ===== REKAPAN (LOADING CEPAT, TIDAK LAGI LAMA) ===== */
+/* ===== REKAPAN (TANPA LOADING LAMA, LANGSUNG TAMPIL) ===== */
 function renderRekapan(){
     var today=new Date();var fromDef=new Date(today.getFullYear(),today.getMonth(),1);
     var fromStr=fromDef.toISOString().split('T')[0];var toStr=todayStr();
@@ -1145,11 +1191,11 @@ function doFilterRekapan(from,to){
     if(from)localFiltered=localFiltered.filter(function(r){return r.tanggal>=from});
     if(to)localFiltered=localFiltered.filter(function(r){return r.tanggal<=to});
     
-    // RENDER LOKAL DULU BIAR LANGSUNG MUNCUL (NO LOADING)
+    // RENDER LOKAL LANGSUNG (NO LOADING OVERLAY)
     renderRekapanTable(localFiltered);
 
-    // LANJUT FETCH SERVER DI LATAR BELAKANG
-    fetchTO(APPS_SCRIPT_URL+'?action=getRecords&from='+(from||'')+'&to='+(to||''),{},4000)
+    // FETCH SERVER DI LATAR BELAKANG
+    fetchTO(APPS_SCRIPT_URL+'?action=getRecords&from='+(from||'')+'&to='+(to||''),{},5000)
     .then(function(r){return r.json()})
     .then(function(d){
         if(d.success && d.records && Array.isArray(d.records)){
@@ -1166,14 +1212,14 @@ function doFilterRekapan(from,to){
             var mergedRecs=serverRecs;
             if(from)mergedRecs=mergedRecs.filter(function(r){return r.tanggal>=from});
             if(to)mergedRecs=mergedRecs.filter(function(r){return r.tanggal<=to});
-            renderRekapanTable(mergedRecs); // UPDATE TABEL SETELAH DATA SERVER DATANG
+            renderRekapanTable(mergedRecs);
         }
     })
     .catch(function(){updateConn(false);});
 }
 
 function renderRekapanTable(data){
-    hideLoading();var container=document.getElementById('rek-table');
+    var container=document.getElementById('rek-table');
     if(!data||data.length===0){container.innerHTML='<div class="empty"><i class="fas fa-box-open"></i><p>Tidak ada data rekapan pada rentang tanggal ini.</p></div>';return;}
     data.sort(function(a,b){var dA=a.tanggal||'';var dB=b.tanggal||'';if(dA!==dB)return dB.localeCompare(dA);return(a.waktuMulai||'').localeCompare(b.waktuMulai||'');});
     var totalIzin=data.length;var totalTepat=data.filter(function(r){return!r.isLate}).length;var totalTelat=data.filter(function(r){return r.isLate}).length;
@@ -1321,13 +1367,10 @@ document.getElementById('setip-form').addEventListener('submit',function(e){
     var count=0;
     for(var i=0;i<users.length;i++){
         users[i].ip=ip;count++;
+        // Kirim update satu per satu agar pasti masuk ke Apps Script
+        fetchTO(APPS_SCRIPT_URL+'?action=addUser',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(users[i])},5000).catch(function(){});
     }
     lsS('users',users);
-    
-    fetchTO(APPS_SCRIPT_URL+'?action=updateAllIP',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({ip:ip})},5000)
-    .then(function(r){return r.json()})
-    .then(function(d){if(d.success)updateConn(true);})
-    .catch(function(){});
     
     showMsg(msgEl,'success','✅ IP "'+ip+'" berhasil diterapkan ke '+count+' user!');
     document.getElementById('setip-input').value='';
