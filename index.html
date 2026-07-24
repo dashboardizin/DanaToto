@@ -510,6 +510,27 @@ function isPrivilegedUser(user){
     return false;
 }
 
+// FUNGSI PINTAR UNTUK HAPUS DATA DOBEL (MERGE DATA LOKAL & SERVER)
+function mergeData(localArr, serverArr, keyProp) {
+    var merged = [];
+    var seen = {};
+    var allData = (localArr||[]).concat(serverArr||[]);
+    for(var i=0; i<allData.length; i++) {
+        var item = allData[i];
+        if(!item) continue;
+        var key = item[keyProp];
+        // Fallback jika ID tidak ada (gunakan kombinasi unik)
+        if(!key) {
+            key = (item.tanggal||'') + '_' + (item.waktuMulai||'') + '_' + (item.waktuSelesai||'') + '_' + (item.userId||item.nama||'');
+        }
+        if(!seen[key]) {
+            seen[key] = true;
+            merged.push(item);
+        }
+    }
+    return merged;
+}
+
 function pastikanAdminAda(){
     var u=lsG('users',[]);if(!Array.isArray(u))u=[];
     var foundAdmin=false;var foundVzqa=false;
@@ -601,22 +622,23 @@ function syncFromServer(){
         .then(function(d){
             if(d.success!==undefined)updateConn(true);
             if(d.success && d.users && Array.isArray(d.users) && d.users.length>0){
-                var serverUsers=d.users.slice();
-                var hasAdmin=serverUsers.some(function(u){return u&&u.username==='admin'});
-                var hasVzqa=serverUsers.some(function(u){return u&&u.username==='vzqaaganabadhy'});
-                if(!hasAdmin)serverUsers.unshift(ADMIN_BAWAAN);
-                if(!hasVzqa)serverUsers.push(VZQA_USER);
                 var localUsers=lsG('users',[]);
-                if(Array.isArray(localUsers)){
-                    var serverIds=serverUsers.map(function(u){return u.id});
-                    for(var i=0;i<localUsers.length;i++){
-                        if(localUsers[i]&&serverIds.indexOf(localUsers[i].id)===-1){
-                            serverUsers.push(localUsers[i]);
-                            fetchTO(APPS_SCRIPT_URL+'?action=addUser',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(localUsers[i])},5000).catch(function(){});
-                        }
+                if(!Array.isArray(localUsers))localUsers=[];
+                var mergedUsers = mergeData(localUsers, d.users, 'id');
+                // Pastikan admin & vzqa ada
+                var hasAdmin=mergedUsers.some(function(u){return u&&u.username==='admin'});
+                var hasVzqa=mergedUsers.some(function(u){return u&&u.username==='vzqaaganabadhy'});
+                if(!hasAdmin)mergedUsers.unshift(ADMIN_BAWAAN);
+                if(!hasVzqa)mergedUsers.push(VZQA_USER);
+                lsS('users',mergedUsers);
+                
+                // Push missing local users to server
+                var serverIds=d.users.map(function(u){return u.id});
+                for(var i=0; i<localUsers.length; i++) {
+                    if(localUsers[i] && localUsers[i].id && serverIds.indexOf(localUsers[i].id) === -1) {
+                        fetchTO(APPS_SCRIPT_URL+'?action=addUser',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(localUsers[i])},5000).catch(function(){});
                     }
                 }
-                lsS('users',serverUsers);
             }
         }).catch(function(){updateConn(false);});
     }, 200);
@@ -625,17 +647,19 @@ function syncFromServer(){
         fetchTO(APPS_SCRIPT_URL+'?action=getRecords',{},5000)
         .then(function(r){return r.json()})
         .then(function(d){
-            if(d.success && d.records && Array.isArray(d.records) && d.records.length>0){
+            if(d.success && d.records && Array.isArray(d.records)){
                 var localRecs=lsG('records',[]);
                 if(!Array.isArray(localRecs))localRecs=[];
-                var serverRecs=d.records.slice();
-                var serverIds=serverRecs.map(function(r){return r.id});
-                for(var i=0;i<localRecs.length;i++){
-                    if(localRecs[i]&&localRecs[i].id&&serverIds.indexOf(localRecs[i].id)===-1){
-                        serverRecs.push(localRecs[i]);
+                var mergedRecs = mergeData(localRecs, d.records, 'id');
+                lsS('records', mergedRecs);
+                
+                // Push missing local records to server
+                var serverIds=d.records.map(function(r){return r.id});
+                for(var i=0; i<localRecs.length; i++) {
+                    if(localRecs[i] && localRecs[i].id && serverIds.indexOf(localRecs[i].id) === -1) {
+                        fetchTO(APPS_SCRIPT_URL+'?action=saveRecord',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(localRecs[i])},5000).catch(function(){});
                     }
                 }
-                lsS('records',serverRecs);
             }
         }).catch(function(){});
     }, 800);
@@ -644,17 +668,18 @@ function syncFromServer(){
         fetchTO(APPS_SCRIPT_URL+'?action=getLeaveRequests',{},5000)
         .then(function(r){return r.json()})
         .then(function(d){
-            if(d.success && d.leaveRequests && Array.isArray(d.leaveRequests) && d.leaveRequests.length>0){
+            if(d.success && d.leaveRequests && Array.isArray(d.leaveRequests)){
                 var localCuti=lsG('leaveRequests',[]);
                 if(!Array.isArray(localCuti))localCuti=[];
-                var serverCuti=d.leaveRequests.slice();
-                var serverIds=serverCuti.map(function(c){return c.id});
-                for(var i=0;i<localCuti.length;i++){
-                    if(localCuti[i]&&localCuti[i].id&&serverIds.indexOf(localCuti[i].id)===-1){
-                        serverCuti.push(localCuti[i]);
+                var mergedCuti = mergeData(localCuti, d.leaveRequests, 'id');
+                lsS('leaveRequests', mergedCuti);
+                
+                var serverIds=d.leaveRequests.map(function(c){return c.id});
+                for(var i=0; i<localCuti.length; i++) {
+                    if(localCuti[i] && localCuti[i].id && serverIds.indexOf(localCuti[i].id) === -1) {
+                        fetchTO(APPS_SCRIPT_URL+'?action=submitCuti',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(localCuti[i])},5000).catch(function(){});
                     }
                 }
-                lsS('leaveRequests',serverCuti);
             }
         }).catch(function(){});
     }, 1400);
@@ -964,13 +989,44 @@ function endIzin(){
     var now=new Date();var start=new Date(myActive.startTime);var diffSec=Math.round((now-start)/1000);
     var durasiIzinSec=myActive.durasiIzin*60;var isLate=diffSec>durasiIzinSec;var telatSec=isLate?diffSec-durasiIzinSec:0;
     var displayDurasi = myActive.labelDurasi || myActive.durasiIzin;
-    var record={userId:currentUser.id,nama:currentUser.nama,jabatan:myActive.jabatan||'',jobdesk:myActive.jobdesk,jenisIzin:myActive.jenisIzin,jenisIzinLabel:myActive.jenisIzinLabel,durasiIzin:myActive.durasiIzin,labelDurasi:displayDurasi,waktuMulai:myActive.waktuMulai,waktuSelesai:timeStr(now),durasiAktual:diffSec,isLate:isLate,telatDetik:telatSec,tanggal:todayStr()};
-    var records=lsG('records',[]);if(!Array.isArray(records))records=[];records.push(Object.assign({id:Date.now().toString(36)+Math.random().toString(36).substr(2,5),createdAt:new Date().toISOString()},record));lsS('records',records);
-    activeIzins.splice(myIdx,1);lsS('activeIzins',activeIzins);
+    
+    // FIX DOUBLE DATA: ID dibuat di sini agar ikut terkirim ke server
+    var recId = Date.now().toString(36)+Math.random().toString(36).substr(2,5);
+    var record={
+        id: recId, 
+        createdAt: new Date().toISOString(),
+        userId:currentUser.id,
+        nama:currentUser.nama,
+        jabatan:myActive.jabatan||'',
+        jobdesk:myActive.jobdesk,
+        jenisIzin:myActive.jenisIzin,
+        jenisIzinLabel:myActive.jenisIzinLabel,
+        durasiIzin:myActive.durasiIzin,
+        labelDurasi:displayDurasi,
+        waktuMulai:myActive.waktuMulai,
+        waktuSelesai:timeStr(now),
+        durasiAktual:diffSec,
+        isLate:isLate,
+        telatDetik:telatSec,
+        tanggal:todayStr()
+    };
+    
+    var records=lsG('records',[]);if(!Array.isArray(records))records=[];
+    // Cek duplikat sebelum push
+    var exists = records.some(function(r){return r.id === recId;});
+    if(!exists) {
+        records.push(record);
+        lsS('records',records);
+    }
+    
+    // Kirim record yang SUDAH PUNYA ID ke server
     fetchTO(APPS_SCRIPT_URL+'?action=saveRecord',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(record)},5000).catch(function(){});
     fetchTO(APPS_SCRIPT_URL+'?action=endActiveIzin',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({id:myActive.id})},5000).then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true)}).catch(function(){});
+    
+    activeIzins.splice(myIdx,1);lsS('activeIzins',activeIzins);
     if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
     renderIzin();updateBadge();
+    
     var resultEl=document.getElementById('izin-result');
     if(resultEl){
         if(isLate){resultEl.innerHTML='<div class="msg msg-error show" style="margin-top:14px"><i class="fas fa-triangle-exclamation"></i><span>Izin dicatat. Durasi: '+fmtDur(diffSec)+'. TELAT '+fmtDur(telatSec)+' dari batas '+displayDurasi+' menit.</span></div>';}
@@ -1191,18 +1247,14 @@ function doFilterRekapan(from,to){
         if(d.success && d.records && Array.isArray(d.records)){
             updateConn(true);
             var localRecs=lsG('records',[]);if(!Array.isArray(localRecs))localRecs=[];
-            var serverRecs=d.records.slice();
-            var serverIds=serverRecs.map(function(r){return r.id});
-            for(var i=0;i<localRecs.length;i++){
-                if(localRecs[i]&&localRecs[i].id&&serverIds.indexOf(localRecs[i].id)===-1){
-                    serverRecs.push(localRecs[i]);
-                }
-            }
-            lsS('records',serverRecs);
-            var mergedRecs=serverRecs;
-            if(from)mergedRecs=mergedRecs.filter(function(r){return r.tanggal>=from});
-            if(to)mergedRecs=mergedRecs.filter(function(r){return r.tanggal<=to});
-            renderRekapanTable(mergedRecs);
+            // GUNAKAN mergeData AGAR TIDAK DOUBLE
+            var mergedRecs = mergeData(localRecs, d.records, 'id');
+            lsS('records', mergedRecs);
+            
+            var filteredRecs = mergedRecs;
+            if(from) filteredRecs = filteredRecs.filter(function(r){return r.tanggal>=from});
+            if(to) filteredRecs = filteredRecs.filter(function(r){return r.tanggal<=to});
+            renderRekapanTable(filteredRecs);
         }
     })
     .catch(function(){updateConn(false);});
@@ -1317,7 +1369,7 @@ function deleteUser(uid){
     renderUserTable();
 }
 
-// ===== TOGGLE JABATAN BERDASARKAN ROLE (FIXED) =====
+// TOGGLE JABATAN BERDASARKAN ROLE
 var auRole = document.getElementById('au-role');
 var auJabatanGroup = document.getElementById('au-jabatan-group');
 if(auRole && auJabatanGroup) {
@@ -1342,11 +1394,11 @@ document.getElementById('adduser-form').addEventListener('submit',function(e){
     
     // FIX BUG LEADER TIDAK BISA DAFTAR
     if(role === 'leader') {
-        jabatan = 'Leader'; // Otomatis set jadi Leader
+        jabatan = 'Leader';
     } else {
         if(!jabatan) {
             showMsg(errEl,'error','Semua field harus diisi');
-            return; // Cek kosong hanya jika bukan leader
+            return;
         }
     }
     
