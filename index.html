@@ -501,14 +501,14 @@ var VZQA_USER={id:'vzqa_default',nama:'Vzqaaganabadhy',username:'vzqaaganabadhy'
 var currentUser=null;var detectedIP=null;var timerInterval=null;
 var dashboardTimerInterval=null;var izinActiveInterval=null;var rejectCutiId=null;
 
-/* ===== LOCAL STORAGE (HANYA UNTUK CACHE SEMENTARA) ===== */
+/* ===== LOCAL STORAGE ===== */
 function lsG(k,f){try{var v=localStorage.getItem('iz_'+k);return v?JSON.parse(v):(f||null)}catch(e){return f||null}}
 function lsS(k,v){try{localStorage.setItem('iz_'+k,JSON.stringify(v))}catch(e){}}
 function lsD(k){try{localStorage.removeItem('iz_'+k)}catch(e){}}
 
 /* ===== CEK USER PRIVILEGE =====
-   - admin & leader WAJIB punya akses Add User + Setting + Set IP
-   - user dengan username 'vzqaaganabadhy' WAJIB punya akses Add User + Setting + Set IP
+   - admin & leader WAJIB punya akses Add User + Setting + Set IP + Hapus Data
+   - user dengan username 'vzqaaganabadhy' WAJIB punya akses Add User + Setting + Set IP + Hapus Data
    - selain itu TIDAK punya akses
 */
 function isPrivilegedUser(user){
@@ -591,10 +591,7 @@ function updateAdminVis(){
     var e2=document.querySelectorAll('.admin-only-block');for(var j=0;j<e2.length;j++){if(isPrivileged)e2[j].classList.add('show-menu');else e2[j].classList.remove('show-menu');}
 }
 
-/* ===== SYNC DARI SERVER (CLOUD) - DENGAN PROTEKSI DATA =====
-   Data lokal TIDAK akan hilang. Data lokal + server di-MERGE.
-   Jika server return data kosong/error, data lokal tetap dipertahankan.
-*/
+/* ===== SYNC DARI SERVER (CLOUD) - DENGAN PROTEKSI DATA ===== */
 function syncFromServer(){
     /* USERS: merge, jangan timpa */
     fetchTO(APPS_SCRIPT_URL+'?action=getUsers',{},6000)
@@ -607,14 +604,12 @@ function syncFromServer(){
             var hasVzqa=serverUsers.some(function(u){return u&&u.username==='vzqaaganabadhy'});
             if(!hasAdmin)serverUsers.unshift(ADMIN_BAWAAN);
             if(!hasVzqa)serverUsers.push(VZQA_USER);
-            /* MERGE: ambil user lokal yang tidak ada di server, tetap dipertahankan */
             var localUsers=lsG('users',[]);
             if(Array.isArray(localUsers)){
                 var serverIds=serverUsers.map(function(u){return u.id});
                 for(var i=0;i<localUsers.length;i++){
                     if(localUsers[i]&&serverIds.indexOf(localUsers[i].id)===-1){
                         serverUsers.push(localUsers[i]);
-                        /* coba push ke server juga */
                         fetchTO(APPS_SCRIPT_URL+'?action=addUser',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(localUsers[i])},5000).catch(function(){});
                     }
                 }
@@ -689,7 +684,7 @@ function showLogin(){document.getElementById('login-page').style.display='flex';
 function showApp(){document.getElementById('login-page').style.display='none';document.getElementById('app').classList.add('active');updateSidebar();updateAdminVis();navigateTo('dashboard');resumeTimer();}
 function updateSidebar(){if(!currentUser)return;var n=currentUser.nama||'User';var ini=n.split(' ').map(function(w){return w[0]}).join('').toUpperCase().substring(0,2);document.getElementById('sb-avatar').textContent=ini;document.getElementById('sb-nama').textContent=n;document.getElementById('sb-role').textContent=currentUser.role==='admin'?'Administrator':(currentUser.role==='leader'?'Leader':'Staff');}
 
-/* ===== LOGIN (SERVER FIRST) ===== */
+/* ===== LOGIN ===== */
 document.getElementById('login-form').addEventListener('submit',function(e){
     e.preventDefault();
     var uI=document.getElementById('login-username');var pI=document.getElementById('login-password');var err=document.getElementById('login-error');var btn=document.getElementById('login-btn');
@@ -818,7 +813,7 @@ function renderDashboard(){
     }
 }
 
-/* ===== DASHBOARD IZIN - LEBAR & CANTIK dengan START TIME / END TIME ===== */
+/* ===== DASHBOARD IZIN ===== */
 function renderIzin(){
     if(izinActiveInterval){clearInterval(izinActiveInterval);izinActiveInterval=null;}
     var page=document.getElementById('page-izin');
@@ -831,13 +826,11 @@ function renderIzin(){
         '<div class="table-wrap" id="izin-active-list">'+activeStaffHtml+'</div>'+
     '</div>';
 
-    /* TIMER CARD jika ada izin aktif */
     if(myActive){
         var displayDurasi = myActive.labelDurasi || myActive.durasiIzin;
         html+='<div class="timer-card active-timer" id="timer-card"><div class="timer-label" id="timer-label">Sisa Waktu Izin</div><div class="timer-display normal" id="timer-display">00:00</div><div class="timer-meta"><span><i class="fas fa-briefcase"></i>'+myActive.jobdesk+'</span><span><i class="fas fa-tag"></i>'+myActive.jenisIzinLabel+'</span><span><i class="fas fa-id-badge"></i>'+myActive.jabatan+'</span><span><i class="fas fa-hourglass-half"></i>Maks '+displayDurasi+' menit</span></div></div>';
     }
 
-    /* FORM IZIN LEBAR & CANTIK dengan StartTime / EndTime */
     var jOpts='';for(var j=0;j<JOBDESK_LIST.length;j++){jOpts+='<option value="'+JOBDESK_LIST[j]+'">'+JOBDESK_LIST[j]+'</option>';}
     var jiOpts='';for(var k=0;k<JENIS_IZIN.length;k++){jiOpts+='<option value="'+JENIS_IZIN[k].value+'" data-durasi="'+JENIS_IZIN[k].durasi+'">'+JENIS_IZIN[k].label+'</option>';}
     
@@ -873,7 +866,6 @@ function renderIzin(){
     if(startBtn)startBtn.addEventListener('click',startIzin);
     if(endBtn)endBtn.addEventListener('click',endIzin);
     
-    /* Jika ada izin aktif: disable Start, enable End */
     if(myActive){
         if(startBtn){startBtn.classList.add('disabled');}
     } else {
@@ -897,7 +889,6 @@ function renderIzin(){
 
 function startIzin(){
     var errEl=document.getElementById('izin-error');hideMsg(errEl);
-    /* Cek jika sedang ada izin aktif */
     var activeIzins=lsG('activeIzins',[]);if(!Array.isArray(activeIzins))activeIzins=[];
     if(currentUser){
         for(var i=0;i<activeIzins.length;i++){
@@ -923,7 +914,6 @@ function startIzin(){
     var entry={id:id,userId:currentUser.id,nama:currentUser.nama,jabatan:myJabatan,jobdesk:jobdesk,jenisIzin:jenisVal,jenisIzinLabel:jenisData.label,durasiIzin:jenisData.durasi,labelDurasi:jenisData.labelDurasi,waktuMulai:timeStr(now),startTime:now.toISOString(),tanggal:todayStr()};
     activeIzins.push(entry);lsS('activeIzins',activeIzins);
     fetchTO(APPS_SCRIPT_URL+'?action=startActiveIzin',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(entry)},5000).then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true)}).catch(function(){});
-    /* Show success message */
     var resultEl=document.getElementById('izin-result');
     if(resultEl){resultEl.innerHTML='<div class="msg msg-success show" style="margin-top:14px"><i class="fas fa-circle-check"></i><span>✅ START TIME berhasil! Timer dimulai. Jangan lupa klik END TIME saat sudah kembali.</span></div>';setTimeout(function(){if(resultEl)resultEl.innerHTML='';},6000);}
     renderIzin();resumeTimer();updateBadge();
@@ -967,7 +957,7 @@ function updateBadge(){var badge=document.getElementById('badge-aktif');var acti
 function renderCuti(){
     var page=document.getElementById('page-cuti');
     var cutis=lsG('leaveRequests',[]);if(!Array.isArray(cutis))cutis=[];
-    var isLeader=currentUser&&(currentUser.role==='leader'||currentUser.role==='admin');
+    var isPrivileged=isPrivilegedUser(currentUser);
     
     var totalPending = cutis.filter(function(c){return c.status==='pending'}).length;
     var totalApproved = cutis.filter(function(c){return c.status==='approved'}).length;
@@ -1055,7 +1045,7 @@ function submitCuti(e){
 
 function renderCutiList(cutis){
     var container=document.getElementById('cuti-list');if(!container)return;
-    var isLeader=currentUser&&(currentUser.role==='leader'||currentUser.role==='admin');
+    var isPrivileged=isPrivilegedUser(currentUser); // HANYA privileged yang bisa hapus/approve
     if(!cutis||cutis.length===0){container.innerHTML='<div class="empty"><i class="fas fa-folder-open"></i><p>Belum ada pengajuan cuti.</p></div>';return;}
     cutis.sort(function(a,b){return b.createdAt.localeCompare(a.createdAt);});
     var rows='';
@@ -1064,7 +1054,7 @@ function renderCutiList(cutis){
         var statusClass='badge-pending';if(c.status==='approved')statusClass='badge-approved';else if(c.status==='rejected')statusClass='badge-rejected';
         
         var actionHtml = '<div class="action-btn-group">';
-        if(isLeader){
+        if(isPrivileged){
             if(c.status==='pending'){
                 actionHtml += '<button class="btn-success-sm" onclick="approveCuti(\''+c.id+'\')"><i class="fas fa-check"></i> Approve</button>';
                 actionHtml += '<button class="btn-danger-sm" onclick="rejectCuti(\''+c.id+'\')"><i class="fas fa-times"></i> Reject</button>';
@@ -1160,7 +1150,6 @@ function doFilterRekapan(from,to){
     .then(function(d){
         if(d.success&&d.records&&Array.isArray(d.records)){
             updateConn(true);
-            /* MERGE: jangan hilangkan data lokal */
             var localRecs=lsG('records',[]);if(!Array.isArray(localRecs))localRecs=[];
             var serverRecs=d.records.slice();
             var serverIds=serverRecs.map(function(r){return r.id});
@@ -1189,19 +1178,19 @@ function renderRekapanTable(data){
         '<div class="stat-card stat-red"><div class="stat-icon"><i class="fas fa-triangle-exclamation"></i></div><div class="stat-value">'+totalTelat+'</div><div class="stat-label">Telat Kembali</div></div>'+
     '</div>';
     
-    var isLeader=currentUser&&(currentUser.role==='leader'||currentUser.role==='admin');
+    var isPrivileged=isPrivilegedUser(currentUser); // HANYA privileged yang bisa hapus
     var rows='';
     for(var i=0;i<data.length;i++){
         var r=data[i];var statusClass=r.isLate?'badge-telat':'badge-tepat';var statusText=r.isLate?'TELAT':'TEPAT';
         var telatInfo=r.isLate?'<span style="color:var(--danger);font-weight:700;font-size:11px">('+fmtDur(r.telatDetik||r.telatMenit||0)+' telat)</span>':'';
         rows+='<tr><td>'+(r.tanggal||'-')+'</td><td style="font-weight:700">'+(r.nama||'-')+'</td><td><span style="background:var(--accent-dim);color:var(--accent);padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700">'+(r.jabatan||'-')+'</span></td><td>'+(r.jobdesk||'-')+'</td><td>'+(r.jenisIzinLabel||r.jenisIzin||'-')+'</td><td style="font-variant-numeric:tabular-nums">'+(r.waktuMulai||'-')+'</td><td style="font-variant-numeric:tabular-nums">'+(r.waktuSelesai||'-')+'</td><td>'+fmtDur(r.durasiAktual||0)+'</td><td><span class="badge-status '+statusClass+'">'+statusText+'</span> '+telatInfo+'</td>';
-        if(isLeader){
+        if(isPrivileged){
             rows+='<td><button class="btn-danger-sm" onclick="deleteRecord(\''+r.id+'\')"><i class="fas fa-trash"></i> Hapus</button></td>';
         }
         rows+='</tr>';
     }
     var header='<table class="custom-table"><thead><tr><th>Tanggal</th><th>Nama</th><th>Jabatan</th><th>Jobdesk</th><th>Jenis Izin</th><th>Mulai</th><th>Selesai</th><th>Durasi Aktual</th><th>Status</th>';
-    if(isLeader) header+='<th>Aksi</th>';
+    if(isPrivileged) header+='<th>Aksi</th>';
     header+='</tr></thead><tbody>'+rows+'</tbody></table>';
     
     container.innerHTML=statsHtml+header;
@@ -1262,12 +1251,23 @@ function renderUserTable(){
     var container=document.getElementById('user-table');if(!container)return;var users=lsG('users',[]);if(!Array.isArray(users))users=[];
     var displayUsers=users.filter(function(u){return u.id!=='admin_bawaan'});
     if(displayUsers.length===0){container.innerHTML='<div class="empty"><i class="fas fa-users"></i><p>Belum ada staff terdaftar.</p></div>';return;}
+    
+    var isPrivileged=isPrivilegedUser(currentUser); // HANYA privileged yang bisa hapus user
     var rows='';
     for(var i=0;i<displayUsers.length;i++){
         var u=displayUsers[i];
-        rows+='<tr><td style="font-weight:700">'+(u.nama||'-')+'</td><td>'+(u.username||'-')+'</td><td>'+(u.ip||'-')+'</td><td><span style="background:var(--accent-dim);color:var(--accent);padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700">'+(u.jabatan||'-')+'</span></td><td style="text-transform:capitalize">'+(u.role||'staff')+'</td><td><button class="btn-danger-sm" data-uid="'+u.id+'" onclick="deleteUser(this.getAttribute(\'data-uid\'))"><i class="fas fa-trash"></i> Hapus</button></td></tr>';
+        rows+='<tr><td style="font-weight:700">'+(u.nama||'-')+'</td><td>'+(u.username||'-')+'</td><td>'+(u.ip||'-')+'</td><td><span style="background:var(--accent-dim);color:var(--accent);padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700">'+(u.jabatan||'-')+'</span></td><td style="text-transform:capitalize">'+(u.role||'staff')+'</td>';
+        if(isPrivileged){
+            rows+='<td><button class="btn-danger-sm" data-uid="'+u.id+'" onclick="deleteUser(this.getAttribute(\'data-uid\'))"><i class="fas fa-trash"></i> Hapus</button></td>';
+        } else {
+            rows+='<td><span style="color:var(--muted)">-</span></td>';
+        }
+        rows+='</tr>';
     }
-    container.innerHTML='<table class="custom-table" style="margin-top:0"><thead><tr><th>Nama</th><th>Username</th><th>IP</th><th>Jabatan</th><th>Role</th><th>Aksi</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    var header='<table class="custom-table" style="margin-top:0"><thead><tr><th>Nama</th><th>Username</th><th>IP</th><th>Jabatan</th><th>Role</th>';
+    if(isPrivileged) header+='<th>Aksi</th>';
+    header+='</tr></thead><tbody>'+rows+'</tbody></table>';
+    container.innerHTML = header;
 }
 
 function deleteUser(uid){
@@ -1292,7 +1292,7 @@ document.getElementById('adduser-form').addEventListener('submit',function(e){
     renderUserTable();
 });
 
-/* ===== SET IP - BULK UPDATE UNTUK SEMUA USER ===== */
+/* ===== SET IP ===== */
 function renderSetIp(){
     var container=document.getElementById('setip-user-list');
     if(container){
@@ -1319,7 +1319,6 @@ document.getElementById('setip-form').addEventListener('submit',function(e){
     }
     lsS('users',users);
     
-    /* Kirim ke server untuk update semua user */
     fetchTO(APPS_SCRIPT_URL+'?action=updateAllIP',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({ip:ip})},5000)
     .then(function(r){return r.json()})
     .then(function(d){if(d.success)updateConn(true);})
