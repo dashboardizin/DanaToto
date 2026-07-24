@@ -1317,20 +1317,15 @@ function deleteUser(uid){
     renderUserTable();
 }
 
-// ===== TOGGLE JABATAN BERDASARKAN ROLE =====
+// ===== TOGGLE JABATAN BERDASARKAN ROLE (FIXED) =====
 var auRole = document.getElementById('au-role');
 var auJabatanGroup = document.getElementById('au-jabatan-group');
-var auJabatan = document.getElementById('au-jabatan');
-if(auRole && auJabatanGroup && auJabatan) {
+if(auRole && auJabatanGroup) {
     auRole.addEventListener('change', function() {
         if(this.value === 'leader') {
             auJabatanGroup.style.display = 'none';
-            auJabatan.removeAttribute('required');
-            auJabatan.value = 'Leader'; // Set default value agar lolos validasi
         } else {
             auJabatanGroup.style.display = 'block';
-            auJabatan.setAttribute('required', 'required');
-            auJabatan.value = '';
         }
     });
 }
@@ -1338,8 +1333,28 @@ if(auRole && auJabatanGroup && auJabatan) {
 document.getElementById('adduser-form').addEventListener('submit',function(e){
     e.preventDefault();
     var errEl=document.getElementById('au-error');var succEl=document.getElementById('au-success');hideMsg(errEl);hideMsg(succEl);
-    var nama=document.getElementById('au-nama').value.trim();var username=document.getElementById('au-username').value.trim();var password=document.getElementById('au-password').value.trim();var ip=document.getElementById('au-ip').value.trim();var jabatan=document.getElementById('au-jabatan').value;var role=document.getElementById('au-role').value;
-    if(!nama||!username||!password||!jabatan||!role){showMsg(errEl,'error','Semua field harus diisi');return;}
+    var nama=document.getElementById('au-nama').value.trim();
+    var username=document.getElementById('au-username').value.trim();
+    var password=document.getElementById('au-password').value.trim();
+    var ip=document.getElementById('au-ip').value.trim();
+    var role=document.getElementById('au-role').value;
+    var jabatan=document.getElementById('au-jabatan').value;
+    
+    // FIX BUG LEADER TIDAK BISA DAFTAR
+    if(role === 'leader') {
+        jabatan = 'Leader'; // Otomatis set jadi Leader
+    } else {
+        if(!jabatan) {
+            showMsg(errEl,'error','Semua field harus diisi');
+            return; // Cek kosong hanya jika bukan leader
+        }
+    }
+    
+    if(!nama||!username||!password||!role){
+        showMsg(errEl,'error','Semua field harus diisi');
+        return;
+    }
+    
     var users=lsG('users',[]);if(!Array.isArray(users))users=[];
     for(var i=0;i<users.length;i++){if(users[i].username.toLowerCase()===username.toLowerCase()){showMsg(errEl,'error','Username sudah digunakan');return;}}
     var newUser={id:Date.now().toString(36)+Math.random().toString(36).substr(2,5),nama:nama,username:username,password:password,ip:ip||'*',jabatan:jabatan,role:role,createdAt:new Date().toISOString()};
@@ -1347,9 +1362,7 @@ document.getElementById('adduser-form').addEventListener('submit',function(e){
     fetchTO(APPS_SCRIPT_URL+'?action=addUser',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(newUser)},5000).then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);}).catch(function(){});
     showMsg(succEl,'success','Staff '+nama+' berhasil ditambahkan!');
     document.getElementById('au-nama').value='';document.getElementById('au-username').value='';document.getElementById('au-password').value='';document.getElementById('au-ip').value='';document.getElementById('au-jabatan').value='';document.getElementById('au-role').value='staff';
-    // Reset tampilan form jabatan
-    auJabatanGroup.style.display = 'block';
-    auJabatan.setAttribute('required', 'required');
+    if(auJabatanGroup) auJabatanGroup.style.display = 'block';
     renderUserTable();
 });
 
