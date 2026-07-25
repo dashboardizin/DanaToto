@@ -485,7 +485,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 })();
 
 var APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbxZwK_7sfK-UIMtMmC3pnyL48-hfUeq89ljSvBIAjeJWMaG77yxgbXN5q9NatCsTf2y4Q/exec'; 
-var JOBDESK_LIST=['BUANG DANA BANK','DEPO BCA','DEPO BNI','DEPO BRI','DEPO MANDIRI','DEPO EWALLET','WD BCA','WD BNI','WD BRI','WD MANDIRI','WD EWALLET','LINE UTAMA','KAPTEN','LINE BACKUP','LIVECHAT'];
+var JOBDESK_LIST=['BUANG DANA BANK','DEPO BCA','DEPO BNI','DEPO BRI','DEPO MANDIRI','DEPO EWALLET','WD BCA','WD BNI','WD BRI','WD MANDIRI','WD EWALLET','LINE UTAMA','WD LINKAJA','LINE BACKUP','LIVECHAT'];
 var JENIS_IZIN=[
     {label:'AMBIL MAKAN (12 Menit)',value:'MAKAN',durasi:13, labelDurasi:12}, 
     {label:'IZIN (20 MENIT)',value:'IZIN',durasi:21, labelDurasi:20}          
@@ -834,13 +834,20 @@ function buildActiveStaffTableHtml(activeIzins){
     '</table>';
 }
 
+// ===== DASHBOARD (HAPUS TABEL SEDANG IZIN KELUAR) =====
 function renderDashboard(){
     if(dashboardTimerInterval){clearInterval(dashboardTimerInterval);dashboardTimerInterval=null;}
-    var page=document.getElementById('page-dashboard');var users=lsG('users',[]);if(!Array.isArray(users))users=[];var allRecs=lsG('records',[]);if(!Array.isArray(allRecs))allRecs=[];var today=todayStr();
-    var todayRecs=allRecs.filter(function(r){return r.tanggal===today});var todayLate=todayRecs.filter(function(r){return r.isLate});
-    var activeIzins=cleanupActiveIzins();var hour=new Date().getHours();var greeting=hour<12?'Selamat Pagi':hour<17?'Selamat Siang':'Selamat Malam';
-    var activeStaffHtml=buildActiveStaffTableHtml(activeIzins);
+    var page=document.getElementById('page-dashboard');
+    var users=lsG('users',[]);if(!Array.isArray(users))users=[];
+    var allRecs=lsG('records',[]);if(!Array.isArray(allRecs))allRecs=[];
+    var today=todayStr();
+    var todayRecs=allRecs.filter(function(r){return r.tanggal===today});
+    var todayLate=todayRecs.filter(function(r){return r.isLate});
+    var activeIzins=cleanupActiveIzins();
+    var hour=new Date().getHours();
+    var greeting=hour<12?'Selamat Pagi':hour<17?'Selamat Siang':'Selamat Malam';
 
+    // TIDAK ADA TABEL STAFF SEDANG IZIN KELUAR LAGI DI DASHBOARD
     page.innerHTML=
         '<div class="welcome-card"><h2>'+greeting+', <span class="name-highlight">'+(currentUser?currentUser.nama:'User')+'</span></h2><p class="welcome-sub">Selamat bekerja! Semoga harimu produktif dan menyenangkan.</p></div>'+
         '<div class="stat-grid">'+
@@ -848,21 +855,7 @@ function renderDashboard(){
             '<div class="stat-card stat-green"><div class="stat-icon"><i class="fas fa-clock"></i></div><div class="stat-value">'+todayRecs.length+'</div><div class="stat-label">Izin Hari Ini</div></div>'+
             '<div class="stat-card stat-red"><div class="stat-icon"><i class="fas fa-triangle-exclamation"></i></div><div class="stat-value">'+todayLate.length+'</div><div class="stat-label">Telat Hari Ini</div></div>'+
             '<div class="stat-card stat-yellow"><div class="stat-icon"><i class="fas fa-person-walking"></i></div><div class="stat-value">'+activeIzins.length+'</div><div class="stat-label">Sedang Izin</div></div>'+
-        '</div>'+
-        '<div class="panel active-staff-panel" style="margin-top:0">'+
-            '<div class="panel-header">'+
-                '<h3><i class="fas fa-door-open"></i> Staff Sedang Izin Keluar</h3>'+
-                '<span class="jabatan-count-badge">'+activeIzins.length+' orang keluar</span>'+
-            '</div>'+
-            '<div class="table-wrap" id="active-staff-list">'+activeStaffHtml+'</div>'+
         '</div>';
-
-    if(activeIzins.length>0){
-        dashboardTimerInterval=setInterval(function(){
-            var el=document.getElementById('active-staff-list');
-            if(el){var active=cleanupActiveIzins();el.innerHTML=buildActiveStaffTableHtml(active);var badge=el.closest('.panel').querySelector('.jabatan-count-badge');if(badge)badge.textContent=active.length+' orang keluar';}else{clearInterval(dashboardTimerInterval);dashboardTimerInterval=null;}
-        },1000);
-    }
 }
 
 function renderIzin(){
