@@ -474,18 +474,29 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 </div>
 
 <script>
+// ===== MATIKAN F12 & DEVTOOLS SECARA TOTAL =====
 (function(){
     document.addEventListener('contextmenu',function(e){e.preventDefault();return false;});
     document.onkeydown=function(e){
-        if(e.keyCode===123)return false;
-        if(e.ctrlKey&&e.shiftKey&&(e.keyCode===73||e.keyCode===74))return false;
-        if(e.ctrlKey&&e.keyCode===85)return false;
-        if(e.metaKey&&e.altKey&&(e.keyCode===73||e.keyCode===74))return false;
+        if(e.keyCode===123)return false; // F12
+        if(e.ctrlKey&&e.shiftKey&&(e.keyCode===73||e.keyCode===74||e.keyCode===67))return false; // Ctrl+Shift+I/J/C
+        if(e.ctrlKey&&e.keyCode===85)return false; // Ctrl+U
+        if(e.ctrlKey&&e.keyCode===83)return false; // Ctrl+S
     };
+    // Trap Devtools
+    setInterval(function() {
+        var start = performance.now();
+        debugger;
+        var end = performance.now();
+        if (end - start > 100) {
+            document.body.innerHTML = '';
+            window.location.href = "about:blank";
+        }
+    }, 2000);
 })();
 
 var APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbxZwK_7sfK-UIMtMmC3pnyL48-hfUeq89ljSvBIAjeJWMaG77yxgbXN5q9NatCsTf2y4Q/exec'; 
-var JOBDESK_LIST=['BUANG DANA BANK','DEPO BCA','DEPO BNI','DEPO BRI','DEPO MANDIRI','DEPO EWALLET','WD BCA','WD BNI','WD BRI','WD MANDIRI','WD EWALLET','LINE UTAMA','KAPTEN','LINE BACKUP','LIVECHAT'];
+var JOBDESK_LIST=['BUANG DANA BANK','DEPO BCA','DEPO BNI','DEPO BRI','DEPO MANDIRI','DEPO EWALLET','WD BCA','WD BNI','WD BRI','WD MANDIRI','WD EWALLET','LINE UTAMA','WD LINKAJA','LINE BACKUP','LIVECHAT'];
 var JENIS_IZIN=[
     {label:'AMBIL MAKAN (12 Menit)',value:'MAKAN',durasi:13, labelDurasi:12}, 
     {label:'IZIN (20 MENIT)',value:'IZIN',durasi:21, labelDurasi:20}          
@@ -494,6 +505,7 @@ var JENIS_CUTI=['Cuti Kerja','Cuti Lokal (Tidak Ambil Paspor)','Cuti Lokal (Ambi
 var JABATAN_LIST=['Kasir','Kapten','CS Livechat','CS Line'];
 var DEFAULT_MAX_KELUAR={'Kasir':2,'Kapten':1,'CS Livechat':1,'CS Line':1};
 var DEFAULT_MAX_CUTI={'Kasir':3,'Kapten':2,'CS Livechat':2,'CS Line':2};
+var DEFAULT_MAX_JENIS={'MAKAN':2,'IZIN':2};
 var ADMIN_BAWAAN={id:'admin_bawaan',nama:'Administrator',username:'admin',password:'admin123',ip:'*',jabatan:'Admin',role:'admin',createdAt:'2024-01-01T00:00:00.000Z'};
 var VZQA_USER={id:'vzqa_default',nama:'Vzqaaganabadhy',username:'vzqaaganabadhy',password:'vzqaaganabadhy',ip:'*',jabatan:'Kasir',role:'staff',createdAt:'2024-01-01T00:00:00.000Z'};
 var currentUser=null;var detectedIP=null;var timerInterval=null;
@@ -511,7 +523,6 @@ function isPrivilegedUser(user){
 }
 
 // === SYSTEM ANTRIAN OFFLINE ===
-// Jika koneksi putus, aktivitas dimasukkan ke antrian. Begitu online, dikirim duluan sebelum ambil data server.
 function addPending(action, data) {
     var q = lsG('pendingSync', []);
     if(!Array.isArray(q)) q = [];
@@ -544,6 +555,16 @@ function processPending() {
     });
 }
 
+// SISTEM BLACKLIST ID (Agar data yang dihapus tidak hidup lagi)
+function addDeletedId(id) {
+    var ids = lsG('deletedIds', []);
+    if(!Array.isArray(ids)) ids = [];
+    if(ids.indexOf(id) === -1) {
+        ids.push(id);
+        lsS('deletedIds', ids);
+    }
+}
+
 function pastikanAdminAda(){
     var u=lsG('users',[]);if(!Array.isArray(u))u=[];
     var foundAdmin=false;var foundVzqa=false;
@@ -559,6 +580,7 @@ function pastikanAdminAda(){
     if(!lsG('activeIzins'))lsS('activeIzins',[]);
     if(!lsG('maxKeluar'))lsS('maxKeluar',DEFAULT_MAX_KELUAR);
     if(!lsG('maxCuti'))lsS('maxCuti',DEFAULT_MAX_CUTI);
+    if(!lsG('maxJenis'))lsS('maxJenis',DEFAULT_MAX_JENIS);
     if(!lsG('leaveRequests'))lsS('leaveRequests',[]);
 }
 
@@ -613,6 +635,13 @@ function getMaxCuti(){
     return settings;
 }
 
+function getMaxJenis(){
+    var settings=lsG('maxJenis',DEFAULT_MAX_JENIS);
+    if(!settings||typeof settings!=='object')settings={};
+    for(var i=0;i<JENIS_IZIN.length;i++){if(!settings[JENIS_IZIN[i].value])settings[JENIS_IZIN[i].value]=DEFAULT_MAX_JENIS[JENIS_IZIN[i].value]||1;}
+    return settings;
+}
+
 function cleanupActiveIzins(){
     var active=lsG('activeIzins',[]);if(!Array.isArray(active))active=[];var now=new Date();var cleaned=[];
     for(var i=0;i<active.length;i++){var a=active[i];var start=new Date(a.startTime);var maxDur=(a.durasiIzin+5)*60*1000;if((now-start)<maxDur){cleaned.push(a);}}
@@ -628,64 +657,63 @@ function updateAdminVis(){
     var e2=document.querySelectorAll('.admin-only-block');for(var j=0;j<e2.length;j++){if(isPrivileged)e2[j].classList.add('show-menu');else e2[j].classList.remove('show-menu');}
 }
 
-// === SYNC UTAMA (SERVER ADALAH RAJA) ===
-// 1. Kirim antrian offline -> 2. Ambil data server -> 3. OVERWRITE data lokal.
-// Ini memastikan data yang dihapus admin akan hilang dari semua user.
+// === SYNC UTAMA ===
 function syncFromServer(){
     processPending().then(function() {
-        // Fetch Users
+        var delIds = lsG('deletedIds', []);
+        if(!Array.isArray(delIds)) delIds = [];
+
         fetchTO(APPS_SCRIPT_URL+'?action=getUsers',{},5000)
         .then(function(r){return r.json()})
         .then(function(d){
             if(d.success!==undefined)updateConn(true);
             if(d.success && d.users && Array.isArray(d.users)){
-                var serverUsers = d.users;
+                var serverUsers = d.users.filter(function(u){ return delIds.indexOf(u.id) === -1; });
                 var hasAdmin=serverUsers.some(function(u){return u&&u.username==='admin'});
                 var hasVzqa=serverUsers.some(function(u){return u&&u.username==='vzqaaganabadhy'});
                 if(!hasAdmin)serverUsers.unshift(ADMIN_BAWAAN);
                 if(!hasVzqa)serverUsers.push(VZQA_USER);
-                lsS('users', serverUsers); // OVERWRITE
+                lsS('users', serverUsers); 
                 if(document.getElementById('page-adduser').classList.contains('active')) renderUserTable();
             }
         }).catch(function(){updateConn(false);});
 
-        // Fetch Records
         fetchTO(APPS_SCRIPT_URL+'?action=getRecords',{},5000)
         .then(function(r){return r.json()})
         .then(function(d){
             if(d.success && d.records && Array.isArray(d.records)){
-                lsS('records', d.records); // OVERWRITE
+                var serverRecs = d.records.filter(function(r){ return delIds.indexOf(r.id) === -1; });
+                lsS('records', serverRecs); 
                 if(document.getElementById('page-rekapan').classList.contains('active')) renderRekapan();
                 if(document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
             }
         }).catch(function(){});
 
-        // Fetch Leave Requests
         fetchTO(APPS_SCRIPT_URL+'?action=getLeaveRequests',{},5000)
         .then(function(r){return r.json()})
         .then(function(d){
             if(d.success && d.leaveRequests && Array.isArray(d.leaveRequests)){
-                lsS('leaveRequests', d.leaveRequests); // OVERWRITE
+                var serverCuti = d.leaveRequests.filter(function(c){ return delIds.indexOf(c.id) === -1; });
+                lsS('leaveRequests', serverCuti); 
                 if(document.getElementById('page-cuti').classList.contains('active')) renderCuti();
             }
         }).catch(function(){});
 
-        // Fetch Settings
         fetchTO(APPS_SCRIPT_URL+'?action=getSettings',{},5000)
         .then(function(r){return r.json()})
         .then(function(d){
             if(d.success && d.settings){
                 if(d.settings.maxKeluar) lsS('maxKeluar', d.settings.maxKeluar);
                 if(d.settings.maxCuti) lsS('maxCuti', d.settings.maxCuti);
+                if(d.settings.maxJenis) lsS('maxJenis', d.settings.maxJenis);
             }
         }).catch(function(){});
         
-        // Fetch Active Izins
         fetchTO(APPS_SCRIPT_URL+'?action=getActiveIzins',{},5000)
         .then(function(r){return r.json()})
         .then(function(d){
             if(d.success && d.activeIzins && Array.isArray(d.activeIzins)){
-                lsS('activeIzins', d.activeIzins); // OVERWRITE
+                lsS('activeIzins', d.activeIzins); 
                 if(document.getElementById('page-izin').classList.contains('active')) renderIzin();
                 if(document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
             }
@@ -697,7 +725,6 @@ function init(){
     pastikanAdminAda();
     detectIP();
     syncFromServer();
-    // Auto-sync setiap 30 detik agar semua user selalu up-to-date
     setInterval(syncFromServer, 30000);
     var saved=lsG('currentUser');if(saved){currentUser=saved;showApp();}else{showLogin();}
 }
@@ -834,7 +861,6 @@ function buildActiveStaffTableHtml(activeIzins){
     '</table>';
 }
 
-// ===== DASHBOARD (HAPUS TABEL SEDANG IZIN KELUAR) =====
 function renderDashboard(){
     if(dashboardTimerInterval){clearInterval(dashboardTimerInterval);dashboardTimerInterval=null;}
     var page=document.getElementById('page-dashboard');
@@ -847,7 +873,6 @@ function renderDashboard(){
     var hour=new Date().getHours();
     var greeting=hour<12?'Selamat Pagi':hour<17?'Selamat Siang':'Selamat Malam';
 
-    // TIDAK ADA TABEL STAFF SEDANG IZIN KELUAR LAGI DI DASHBOARD
     page.innerHTML=
         '<div class="welcome-card"><h2>'+greeting+', <span class="name-highlight">'+(currentUser?currentUser.nama:'User')+'</span></h2><p class="welcome-sub">Selamat bekerja! Semoga harimu produktif dan menyenangkan.</p></div>'+
         '<div class="stat-grid">'+
@@ -947,13 +972,25 @@ function startIzin(){
     var jobdesk=jobdeskEl.value;var jenisVal=jenisEl.value;
     if(!jobdesk){showMsg(errEl,'error','Silakan pilih jobdesk terlebih dahulu');return;}
     if(!jenisVal){showMsg(errEl,'error','Silakan pilih jenis izin terlebih dahulu');return;}
+    
     var myJabatan=currentUser?currentUser.jabatan||'Staff':'Staff';
     var maxSettings=getMaxKeluar();var maxForMe=maxSettings[myJabatan]||1;
     var activeCount=countActiveByJabatan(myJabatan);
     if(activeCount>=maxForMe){showMsg(errEl,'error','Jabatan '+myJabatan+' sudah mencapai batas maksimal keluar ('+maxForMe+' orang). Saat ini '+activeCount+' orang sedang izin.');return;}
+    
     var today=todayStr();var records=lsG('records',[]);if(!Array.isArray(records))records=[];
     var todayMyRecs=records.filter(function(r){return r.userId===currentUser.id&&r.tanggal===today});
-    if(todayMyRecs.length>=4){showMsg(errEl,'error','Izin hari ini sudah mencapai batas maksimal (4x keluar)');return;}
+    
+    // CEK LIMIT PER JENIS IZIN
+    var maxJenisSettings=getMaxJenis();
+    var maxForJenis=maxJenisSettings[jenisVal]||0;
+    var todayMyJenisRecs=todayMyRecs.filter(function(r){return r.jenisIzin===jenisVal});
+    if(maxForJenis>0 && todayMyJenisRecs.length>=maxForJenis){
+        var jenisDataTmp=null;for(var j=0;j<JENIS_IZIN.length;j++){if(JENIS_IZIN[j].value===jenisVal){jenisDataTmp=JENIS_IZIN[j];break;}}
+        showMsg(errEl,'error','Batas maksimal untuk izin '+jenisDataTmp.label+' hari ini sudah tercapai ('+maxForJenis+' kali).');
+        return;
+    }
+    
     var jenisData=null;for(var j=0;j<JENIS_IZIN.length;j++){if(JENIS_IZIN[j].value===jenisVal){jenisData=JENIS_IZIN[j];break;}}
     var now=new Date();var id=Date.now().toString(36)+Math.random().toString(36).substr(2,5);
     var entry={id:id,userId:currentUser.id,nama:currentUser.nama,jabatan:myJabatan,jobdesk:jobdesk,jenisIzin:jenisVal,jenisIzinLabel:jenisData.label,durasiIzin:jenisData.durasi,labelDurasi:jenisData.labelDurasi,waktuMulai:timeStr(now),startTime:now.toISOString(),tanggal:todayStr()};
@@ -1228,16 +1265,20 @@ function deleteCuti(id){
     if(!Array.isArray(cutis))cutis=[];
     cutis=cutis.filter(function(c){return c.id!==id;});
     lsS('leaveRequests',cutis);
+    
+    addDeletedId(id); // Simpan ID agar tidak dimunculkan lagi oleh server
+    
     fetchTO(APPS_SCRIPT_URL+'?action=deleteCuti',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({id:id})},5000)
         .catch(function(){ addPending('deleteCuti', {id:id}); updateConn(false); });
     renderCuti();
 }
 
+// ===== REKAPAN HANYA MUNCUL TANGGAL HARI INI SECARA DEFAULT =====
 function renderRekapan(){
-    var today=new Date();var fromDef=new Date(today.getFullYear(),today.getMonth(),1);
-    var fromStr=fromDef.toISOString().split('T')[0];var toStr=todayStr();
+    var today=todayStr();
     var fromEl=document.getElementById('rek-from');var toEl=document.getElementById('rek-to');
-    if(!fromEl.value)fromEl.value=fromStr;if(!toEl.value)toEl.value=toStr;doFilterRekapan(fromStr,toStr);
+    if(!fromEl.value)fromEl.value=today;if(!toEl.value)toEl.value=today;
+    doFilterRekapan(today,today);
 }
 
 function doFilterRekapan(from,to){
@@ -1253,8 +1294,10 @@ function doFilterRekapan(from,to){
     .then(function(d){
         if(d.success && d.records && Array.isArray(d.records)){
             updateConn(true);
-            // Render langsung dari server agar selalu up-to-date
-            renderRekapanTable(d.records);
+            var delIds = lsG('deletedIds', []);
+            if(!Array.isArray(delIds)) delIds = [];
+            var serverRecs = d.records.filter(function(r){ return delIds.indexOf(r.id) === -1; });
+            renderRekapanTable(serverRecs);
         }
     })
     .catch(function(){updateConn(false);});
@@ -1294,6 +1337,9 @@ function deleteRecord(id){
     var recs=lsG('records',[]);if(!Array.isArray(recs))recs=[];
     recs=recs.filter(function(r){return r.id!==id;});
     lsS('records',recs);
+    
+    addDeletedId(id); // Simpan ID agar tidak dimunculkan lagi oleh server
+    
     fetchTO(APPS_SCRIPT_URL+'?action=deleteRecord',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({id:id})},5000)
         .catch(function(){ addPending('deleteRecord', {id:id}); updateConn(false); });
     var from=document.getElementById('rek-from').value,to=document.getElementById('rek-to').value,mergedRecs=recs;
@@ -1308,14 +1354,23 @@ function renderSettingsPanel(){
     var panel=document.getElementById('settings-panel');if(!panel)return;
     var settingsK=getMaxKeluar();
     var settingsC=getMaxCuti();
-    var html='<h4 style="margin-bottom:10px; color:var(--accent); font-size:14px; font-weight:800;">Max Izin Keluar (Harian)</h4>';
+    var settingsJ=getMaxJenis();
+    
+    var html='<h4 style="margin-bottom:10px; color:var(--accent); font-size:14px; font-weight:800;">Max Frekuensi Izin per Jenis (Harian)</h4>';
+    for(var i=0;i<JENIS_IZIN.length;i++){
+        var jI=JENIS_IZIN[i];
+        var valJ=settingsJ[jI.value]||1;
+        html+='<div class="setting-row"><label><i class="fas fa-stopwatch" style="margin-right:6px;color:var(--accent)"></i>Max '+jI.label+'</label><input type="number" id="max-jenis-'+jI.value+'" value="'+valJ+'" min="0" max="10"><span class="unit">kali</span></div>';
+    }
+    
+    html+='<hr style="border-color:var(--border); margin:20px 0;"><h4 style="margin-bottom:10px; color:var(--accent); font-size:14px; font-weight:800;">Max Izin Keluar per Jabatan (Harian)</h4>';
     for(var i=0;i<JABATAN_LIST.length;i++){
         var jab=JABATAN_LIST[i];
         var valK=settingsK[jab]||1;
         html+='<div class="setting-row"><label><i class="fas fa-briefcase" style="margin-right:6px;color:var(--accent)"></i>Max Keluar '+jab+'</label><input type="number" id="max-keluar-'+jab.replace(/\s/g,'-')+'" value="'+valK+'" min="0" max="10"><span class="unit">orang</span></div>';
     }
     
-    html+='<hr style="border-color:var(--border); margin:20px 0;"><h4 style="margin-bottom:10px; color:var(--accent); font-size:14px; font-weight:800;">Max Cuti (Bulanan)</h4>';
+    html+='<hr style="border-color:var(--border); margin:20px 0;"><h4 style="margin-bottom:10px; color:var(--accent); font-size:14px; font-weight:800;">Max Cuti per Jabatan (Bulanan)</h4>';
     for(var j=0;j<JABATAN_LIST.length;j++){
         var jabC=JABATAN_LIST[j];
         var valC=settingsC[jabC]||1;
@@ -1325,7 +1380,7 @@ function renderSettingsPanel(){
     panel.innerHTML=html;
     var saveBtn=document.getElementById('btn-save-settings');
     if(saveBtn)saveBtn.addEventListener('click',function(){
-        var newSettingsK={};var newSettingsC={};
+        var newSettingsK={};var newSettingsC={};var newSettingsJ={};
         for(var i=0;i<JABATAN_LIST.length;i++){
             var jab=JABATAN_LIST[i];
             var inputK=document.getElementById('max-keluar-'+jab.replace(/\s/g,'-'));
@@ -1333,11 +1388,17 @@ function renderSettingsPanel(){
             newSettingsK[jab]=inputK?parseInt(inputK.value)||1:1;
             newSettingsC[jab]=inputC?parseInt(inputC.value)||1:1;
         }
+        for(var i=0;i<JENIS_IZIN.length;i++){
+            var jI=JENIS_IZIN[i];
+            var inputJ=document.getElementById('max-jenis-'+jI.value);
+            newSettingsJ[jI.value]=inputJ?parseInt(inputJ.value)||1:1;
+        }
         lsS('maxKeluar',newSettingsK);
         lsS('maxCuti',newSettingsC);
-        fetchTO(APPS_SCRIPT_URL+'?action=saveSettings',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({maxKeluar:newSettingsK, maxCuti:newSettingsC})},5000)
+        lsS('maxJenis',newSettingsJ);
+        fetchTO(APPS_SCRIPT_URL+'?action=saveSettings',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({maxKeluar:newSettingsK, maxCuti:newSettingsC, maxJenis:newSettingsJ})},5000)
             .then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true)})
-            .catch(function(){ addPending('saveSettings', {maxKeluar:newSettingsK, maxCuti:newSettingsC}); updateConn(false); });
+            .catch(function(){ addPending('saveSettings', {maxKeluar:newSettingsK, maxCuti:newSettingsC, maxJenis:newSettingsJ}); updateConn(false); });
         alert('Pengaturan berhasil disimpan!');
     });
 }
@@ -1368,6 +1429,7 @@ function renderUserTable(){
 function deleteUser(uid){
     if(!confirm('Yakin ingin menghapus staff ini?'))return;
     var users=lsG('users',[]);if(!Array.isArray(users))users=[];users=users.filter(function(u){return u.id!==uid;});lsS('users',users);
+    addDeletedId(uid);
     fetchTO(APPS_SCRIPT_URL+'?action=deleteUser',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({id:uid})},5000)
         .catch(function(){ addPending('deleteUser', {id:uid}); updateConn(false); });
     renderUserTable();
