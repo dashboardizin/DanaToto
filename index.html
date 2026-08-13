@@ -313,6 +313,10 @@ box-shadow: 0 4px 25px rgba(255, 68, 119, 0.35);
 .modal-actions button{flex:1;padding:12px;border-radius:8px;font-weight:700;cursor:pointer;border:none;font-size:14px}
 .btn-modal-cancel{background:var(--surface);color:var(--fg2);border:1px solid var(--border) !important;}
 .btn-modal-confirm{background:var(--danger);color:#fff;}
+
+.time-cell{display:inline-flex;flex-direction:column;align-items:center;gap:2px;line-height:1.2;}
+.time-cell .t-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;}
+.time-cell .t-val{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;}
 </style>
 </head>
 <body>
@@ -500,8 +504,6 @@ var DEFAULT_MAX_JENIS={'MAKAN':2,'IZIN':2};
 var ADMIN_BAWAAN={id:'admin_bawaan',nama:'Administrator',username:'admin',password:'admin123',ip:'*',jabatan:'Admin',role:'admin',createdAt:'2024-01-01T00:00:00.000Z'};
 var VZQA_USER={id:'vzqa_default',nama:'Vzqaaganabadhy',username:'vzqaaganabadhy',password:'vzqaaganabadhy',ip:'*',jabatan:'Kasir',role:'staff',createdAt:'2024-01-01T00:00:00.000Z'};
 var currentUser=null;var detectedIP=null;
-
-// === PERBAIKAN UTAMA: Semua interval dikelola lewat satu pusat ===
 var _intervals={dashboard:null,izin:null,clock:null,activeTimers:null};
 function clearAllTimers(){
   if(_intervals.dashboard){clearInterval(_intervals.dashboard);_intervals.dashboard=null;}
@@ -521,7 +523,6 @@ if(user.username && user.username.toLowerCase()==='vzqaaganabadhy') return true;
 return false;
 }
 
-// === SYSTEM ANTRIAN OFFLINE ===
 function addPending(action, data) {
 var q = lsG('pendingSync', []);
 if(!Array.isArray(q)) q = [];
@@ -597,7 +598,6 @@ if(on){el.className='conn-status online';el.innerHTML='<i class="fas fa-circle-c
 else{el.className='conn-status offline';el.innerHTML='<i class="fas fa-hard-drive"></i><span>Mode Lokal</span>';}
 }
 
-// === PERBAIKAN: fmtTime yang robust, tidak error walau input aneh ===
 function fmtTime(s){
   if(s===null||s===undefined||isNaN(s)) s=0;
   s=Math.abs(Math.floor(s));
@@ -635,14 +635,12 @@ if(!settings||typeof settings!=='object')settings={};
 for(var i=0;i<JABATAN_LIST.length;i++){if(!settings[JABATAN_LIST[i]])settings[JABATAN_LIST[i]]=DEFAULT_MAX_KELUAR[JABATAN_LIST[i]]||1;}
 return settings;
 }
-
 function getMaxCuti(){
 var settings=lsG('maxCuti',DEFAULT_MAX_CUTI);
 if(!settings||typeof settings!=='object')settings={};
 for(var i=0;i<JABATAN_LIST.length;i++){if(!settings[JABATAN_LIST[i]])settings[JABATAN_LIST[i]]=DEFAULT_MAX_CUTI[JABATAN_LIST[i]]||1;}
 return settings;
 }
-
 function getMaxJenis(){
 var settings=lsG('maxJenis',DEFAULT_MAX_JENIS);
 if(!settings||typeof settings!=='object')settings={};
@@ -654,7 +652,7 @@ function cleanupActiveIzins(){
 var active=lsG('activeIzins',[]);if(!Array.isArray(active))active=[];var now=new Date();var cleaned=[];
 for(var i=0;i<active.length;i++){var a=active[i];
   var start=new Date(a.startTime);
-  if(isNaN(start.getTime())){continue;} // PERBAIKAN: skip data startTime invalid
+  if(isNaN(start.getTime())){continue;}
   var maxDur=(a.durasiIzin+5)*60*1000;
   if((now-start)<maxDur){cleaned.push(a);}
 }
@@ -670,7 +668,6 @@ var e1=document.querySelectorAll('.admin-only');for(var i=0;i<e1.length;i++){if(
 var e2=document.querySelectorAll('.admin-only-block');for(var j=0;j<e2.length;j++){if(isPrivileged)e2[j].classList.add('show-menu');else e2[j].classList.remove('show-menu');}
 }
 
-// === PERBAIKAN: Jam real-time di topbar, update tiap detik TANPA rebuild DOM ===
 function startTopbarClock(){
   if(_intervals.clock){clearInterval(_intervals.clock);_intervals.clock=null;}
   function tick(){
@@ -681,7 +678,6 @@ function startTopbarClock(){
   _intervals.clock=setInterval(tick,1000);
 }
 
-// === SYNC UTAMA ===
 function syncFromServer(){
 processPending().then(function() {
 var delIds = lsG('deletedIds', []);
@@ -750,14 +746,13 @@ pastikanAdminAda();
 detectIP();
 syncFromServer();
 setInterval(syncFromServer, 30000);
-startTopbarClock(); // PERBAIKAN: mulai jam topbar
+startTopbarClock();
 var saved=lsG('currentUser');if(saved){currentUser=saved;showApp();}else{showLogin();}
 }
 function showLogin(){document.getElementById('login-page').style.display='flex';document.getElementById('app').classList.remove('active');document.getElementById('login-username').focus();}
 function showApp(){document.getElementById('login-page').style.display='none';document.getElementById('app').classList.add('active');updateSidebar();updateAdminVis();navigateTo('dashboard');}
 function updateSidebar(){if(!currentUser)return;var n=currentUser.nama||'User';var ini=n.split(' ').map(function(w){return w[0]}).join('').toUpperCase().substring(0,2);document.getElementById('sb-avatar').textContent=ini;document.getElementById('sb-nama').textContent=n;document.getElementById('sb-role').textContent=currentUser.role==='admin'?'Administrator':(currentUser.role==='leader'?'Leader':'Staff');}
 
-// === LOGIN ===
 document.getElementById('login-form').addEventListener('submit',function(e){
 e.preventDefault();
 var uI=document.getElementById('login-username');var pI=document.getElementById('login-password');var err=document.getElementById('login-error');var btn=document.getElementById('login-btn');
@@ -840,7 +835,6 @@ document.getElementById('btn-logout').addEventListener('click',function(){
 var titles={dashboard:'Dashboard',izin:'Dashboard Izin',cuti:'Pengajuan Cuti',rekapan:'Rekapan Telat Izin',adduser:'Add User',setip:'Set IP Address'};
 function navigateTo(p){
 if((p==='adduser'||p==='setip') && !isPrivilegedUser(currentUser))p='dashboard';
-// PERBAIKAN: bersihkan semua timer dulu sebelum pindah halaman
 clearAllTimers();
 var pages=document.querySelectorAll('.page');for(var i=0;i<pages.length;i++)pages[i].classList.remove('active');
 document.getElementById('page-'+p).classList.add('active');
@@ -853,7 +847,6 @@ var navItems=document.querySelectorAll('.nav-item[data-page]');for(var n=0;n<nav
 document.getElementById('mobile-toggle').addEventListener('click',function(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebar-overlay').classList.toggle('show');});
 document.getElementById('sidebar-overlay').addEventListener('click',function(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('show');});
 
-// === PERBAIKAN: buildActiveStaffTableHtml dengan data-attributes untuk update ringan ===
 function buildActiveStaffTableHtml(activeIzins){
 if(!activeIzins||activeIzins.length===0){
 return '<div class="active-empty" style="padding: 30px 20px;"><i class="fas fa-check-circle"></i><p>Semua staff sedang bertugas, tidak ada yang izin keluar saat ini.</p></div>';
@@ -862,7 +855,7 @@ var rows='';
 for(var i=0;i<activeIzins.length;i++){
 var p=activeIzins[i];
 var startMs=new Date(p.startTime).getTime();
-if(isNaN(startMs)) continue; // PERBAIKAN: skip data rusak
+if(isNaN(startMs)) continue;
 var durasi=p.durasiIzin||13;
 rows+=
 '<tr>'+
@@ -880,7 +873,6 @@ return '<table class="custom-table" style="margin-top:0;">'+
 '</table>';
 }
 
-// === PERBAIKAN: update timer cells TANPA rebuild DOM ===
 function updateActiveTimerCells(){
   var cells=document.querySelectorAll('.active-timer-cell');
   var statusCells=document.querySelectorAll('.active-status-cell');
@@ -891,7 +883,7 @@ function updateActiveTimerCells(){
     var durasi=parseInt(cell.getAttribute('data-durasi'));
     if(isNaN(startMs)||isNaN(durasi)) continue;
     var elapsedSec=Math.floor((nowMs-startMs)/1000);
-    if(elapsedSec<0) elapsedSec=0; // PERBAIKAN: jangan negatif
+    if(elapsedSec<0) elapsedSec=0;
     var remaining=durasi*60-elapsedSec;
     if(remaining>0){
       cell.textContent='Sisa '+fmtTime(remaining);
@@ -915,7 +907,6 @@ function updateActiveTimerCells(){
       sc.innerHTML='<span class="badge-telat" style="padding:4px 10px;border-radius:5px;font-size:11px;font-weight:700;">TELAT</span>';
     }
   }
-  // PERBAIKAN: update timer izin personal juga
   var personalTimer=document.getElementById('izin-personal-timer');
   if(personalTimer){
     var pStart=parseInt(personalTimer.getAttribute('data-start-ms'));
@@ -938,11 +929,10 @@ function updateActiveTimerCells(){
   }
 }
 
-// === PERBAIKAN: mulai interval timer ringan (hanya update text) ===
 function startActiveTimerUpdates(){
   if(_intervals.activeTimers){clearInterval(_intervals.activeTimers);_intervals.activeTimers=null;}
-  updateActiveTimerCells(); // langsung update sekali
-  _intervals.activeTimers=setInterval(updateActiveTimerCells,1000); // tiap detik, tanpa rebuild DOM
+  updateActiveTimerCells();
+  _intervals.activeTimers=setInterval(updateActiveTimerCells,1000);
 }
 
 function renderDashboard(){
@@ -958,30 +948,25 @@ var pendingCuti=allCuti.filter(function(c){return c.status==='pending'});
 var hour=new Date().getHours();
 var greeting=hour<12?'Selamat Pagi':hour<17?'Selamat Siang':'Selamat Malam';
 
-// Update badge
 var badgeEl=document.getElementById('badge-aktif');
 if(badgeEl){badgeEl.style.display=activeIzins.length>0?'inline':'none';}
 
 page.innerHTML=
 '<div class="welcome-card"><h2>'+greeting+', <span class="name-highlight">'+(currentUser?currentUser.nama:'User')+'</span></h2><p class="welcome-sub">Selamat bekerja! Semoga harimu produktif dan menyenangkan.</p></div>'+
-
 '<div class="stat-grid">'+
 '<div class="stat-card stat-blue"><div class="stat-icon"><i class="fas fa-clock"></i></div><div class="stat-value">'+todayRecs.length+'</div><div class="stat-label">Izin Hari Ini</div></div>'+
 '<div class="stat-card stat-red"><div class="stat-icon"><i class="fas fa-triangle-exclamation"></i></div><div class="stat-value">'+todayLate.length+'</div><div class="stat-label">Telat Hari Ini</div></div>'+
 '<div class="stat-card stat-green"><div class="stat-icon"><i class="fas fa-person-walking"></i></div><div class="stat-value">'+activeIzins.length+'</div><div class="stat-label">Sedang Izin</div></div>'+
 '<div class="stat-card stat-yellow"><div class="stat-icon"><i class="fas fa-calendar-xmark"></i></div><div class="stat-value">'+pendingCuti.length+'</div><div class="stat-label">Cuti Pending</div></div>'+
 '</div>'+
-
 '<div class="panel active-staff-panel">'+
 '<div class="panel-header"><h3><i class="fas fa-users-between-lines"></i>Staff Sedang Izin Keluar</h3><span class="jabatan-count-badge">'+activeIzins.length+' orang</span></div>'+
 '<div class="table-wrap">'+buildActiveStaffTableHtml(activeIzins)+'</div>'+
 '</div>';
 
-// PERBAIKAN: mulai timer update ringan, BUKAN re-render
 startActiveTimerUpdates();
 }
 
-// === RENDER IZIN ===
 function renderIzin(){
 var page=document.getElementById('page-izin');
 if(!currentUser){page.innerHTML='<div class="empty"><i class="fas fa-lock"></i><p>Silakan login terlebih dahulu.</p></div>';return;}
@@ -992,7 +977,6 @@ for(var i=0;i<activeIzins.length;i++){
   if(activeIzins[i].userId===currentUser.id){myActive=activeIzins[i];break;}
 }
 
-// Cek limit
 var maxKeluar=getMaxKeluar();
 var maxJenis=getMaxJenis();
 var today=todayStr();
@@ -1003,13 +987,11 @@ var maxK=maxKeluar[jabatan]||2;
 var canStart=myTodayRecs.length<maxK;
 
 if(myActive){
-  // Tampilkan timer aktif
   var startMs=new Date(myActive.startTime).getTime();
   var durasi=myActive.durasiIzin||13;
   page.innerHTML=
   '<div class="izin-form-wide">'+
   '<div class="izin-form-header"><div class="form-title"><i class="fas fa-hourglass-half"></i> Izin Sedang Berlangsung</div><div class="form-sub">Anda sedang izin keluar. Timer berjalan otomatis.</div></div>'+
-
   '<div class="timer-card active-timer" id="izin-timer-card">'+
   '<div class="timer-label">Sisa Waktu / Telat</div>'+
   '<div class="timer-display normal" id="izin-personal-timer" data-start-ms="'+startMs+'" data-durasi="'+durasi+'">--:--</div>'+
@@ -1020,17 +1002,14 @@ if(myActive){
   '<span><i class="fas fa-clock"></i> Mulai: '+(myActive.waktuKeluar||'-')+'</span>'+
   '</div>'+
   '</div>'+
-
   '<div class="izin-btn-row" style="margin-top:20px;">'+
   '<button class="btn-time btn-end-time" id="btn-end-izin"><i class="fas fa-stop-circle"></i><span class="btn-label">KEMBALI</span><small>Tekan jika sudah kembali</small></button>'+
   '</div>'+
   '</div>';
 
   document.getElementById('btn-end-izin').addEventListener('click',function(){endIzin(myActive);});
-  // PERBAIKAN: mulai timer update ringan
   startActiveTimerUpdates();
 } else {
-  // Tampilkan form izin
   var jobdeskOptions='';
   for(var j=0;j<JOBDESK_LIST.length;j++){
     jobdeskOptions+='<option value="'+JOBDESK_LIST[j]+'">'+JOBDESK_LIST[j]+'</option>';
@@ -1047,12 +1026,10 @@ if(myActive){
   page.innerHTML=
   '<div class="izin-form-wide">'+
   '<div class="izin-form-header"><div class="form-title"><i class="fas fa-door-open"></i> Izin Keluar</div><div class="form-sub">Isi form berikut untuk mengajukan izin keluar. Batas maksimal '+maxK+'x per hari untuk jabatan '+jabatan+'.</div></div>'+
-
   '<div class="izin-grid-2col">'+
   '<div class="form-group"><label>💼 Jobdesk</label><select id="izin-jobdesk" class="form-select">'+jobdeskOptions+'</select></div>'+
   '<div class="form-group"><label>🏷️ Jenis Izin</label><select id="izin-jenis" class="form-select">'+jenisOptions+'</select></div>'+
   '</div>'+
-
   (canStart?
   '<div class="izin-btn-row">'+
   '<button class="btn-time btn-start-time" id="btn-start-izin"><i class="fas fa-play-circle"></i><span class="btn-label">IZIN KELUAR</span><small>Tekan untuk mulai izin</small></button>'+
@@ -1060,7 +1037,6 @@ if(myActive){
   :
   '<div class="msg msg-error show" style="display:flex;"><i class="fas fa-circle-exclamation"></i><span>Izin hari ini sudah mencapai batas maksimal ('+maxK+'x).</span></div>'
   )+
-
   '</div>';
 
   if(canStart){
@@ -1083,7 +1059,6 @@ function startIzin(){
 
   var now=new Date();
   var activeIzins=cleanupActiveIzins();
-  // Cek duplikat
   for(var j=0;j<activeIzins.length;j++){
     if(activeIzins[j].userId===currentUser.id){alert('Anda sudah sedang izin!');return;}
   }
@@ -1107,7 +1082,6 @@ function startIzin(){
   lsS('activeIzins',activeIzins);
   addPending('addActiveIzin', izinObj);
 
-  // Kirim ke server
   fetchTO(APPS_SCRIPT_URL+'?action=addActiveIzin',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(izinObj)},5000)
   .then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);}).catch(function(){updateConn(false);});
 
@@ -1117,7 +1091,7 @@ function startIzin(){
 function endIzin(myActive){
   var now=new Date();
   var start=new Date(myActive.startTime);
-  if(isNaN(start.getTime())){start=now;} // PERBAIKAN: fallback kalau startTime rusak
+  if(isNaN(start.getTime())){start=now;}
   var elapsedSec=Math.floor((now-start)/1000);
   if(elapsedSec<0) elapsedSec=0;
   var durasiIzin=myActive.durasiIzin||13;
@@ -1144,12 +1118,10 @@ function endIzin(myActive){
     endTime:now.toISOString()
   };
 
-  // Simpan record
   var allRecs=lsG('records',[]);if(!Array.isArray(allRecs))allRecs=[];
   allRecs.push(record);
   lsS('records',allRecs);
 
-  // Hapus dari active
   var activeIzins=cleanupActiveIzins();
   var newActive=[];
   for(var i=0;i<activeIzins.length;i++){
@@ -1157,7 +1129,6 @@ function endIzin(myActive){
   }
   lsS('activeIzins',newActive);
 
-  // Kirim ke server
   addPending('addRecord', record);
   addPending('removeActiveIzin', {id:myActive.id});
   fetchTO(APPS_SCRIPT_URL+'?action=addRecord',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(record)},5000)
@@ -1168,7 +1139,6 @@ function endIzin(myActive){
   renderIzin();
 }
 
-// === RENDER CUTI ===
 function renderCuti(){
 var page=document.getElementById('page-cuti');
 if(!currentUser){page.innerHTML='<div class="empty"><i class="fas fa-lock"></i><p>Silakan login.</p></div>';return;}
@@ -1240,7 +1210,6 @@ page.innerHTML=
 '<div id="cuti-msg" class="msg"><i></i><span></span></div>'+
 '</form>'+
 '</div></div>'+
-
 '<div class="panel">'+
 '<div class="panel-header"><h3><i class="fas fa-clock-rotate-left"></i>Riwayat Cuti Saya</h3></div>'+
 '<div class="table-wrap">'+
@@ -1251,7 +1220,6 @@ page.innerHTML=
 '</div>'+
 adminSection;
 
-// Event form cuti
 var cutiForm=document.getElementById('cuti-form');
 if(cutiForm){
   cutiForm.addEventListener('submit',function(e){
@@ -1343,7 +1311,7 @@ function confirmReject(){
   renderCuti();
 }
 
-// === RENDER REKAPAN ===
+// ===== PERBAIKAN: renderRekapan dengan tombol hapus & end time di sebelah start time =====
 function renderRekapan(){
   var allRecs=lsG('records',[]);if(!Array.isArray(allRecs))allRecs=[];
   var fromEl=document.getElementById('rek-from');
@@ -1353,14 +1321,20 @@ function renderRekapan(){
   var filtered=allRecs;
   if(from){filtered=filtered.filter(function(r){return r.tanggal>=from;});}
   if(to){filtered=filtered.filter(function(r){return r.tanggal<=to;});}
-  // Sort terbaru dulu
   filtered.sort(function(a,b){return (b.tanggal||'').localeCompare(a.tanggal||'') || (b.waktuKeluar||'').localeCompare(a.waktuKeluar||'');});
+
+  var canDelete=isPrivilegedUser(currentUser);
 
   var rows='';
   for(var i=0;i<filtered.length;i++){
     var r=filtered[i];
     var badgeCls=r.isLate?'badge-telat':'badge-tepat';
     var statusLabel=r.isLate?'TELAT':'TEPAT';
+
+    // Format waktu keluar & kembali
+    var waktuKeluar=r.waktuKeluar||'-';
+    var waktuKembali=r.waktuKembali||'-';
+
     rows+=
     '<tr>'+
     '<td style="font-weight:700">'+(r.nama||'-')+'</td>'+
@@ -1368,25 +1342,73 @@ function renderRekapan(){
     '<td>'+(r.jobdesk||'-')+'</td>'+
     '<td><span class="badge-jenis-cuti">'+(r.jenisIzinLabel||r.jenisIzin||'-')+'</span></td>'+
     '<td>'+r.tanggal+'</td>'+
-    '<td>'+(r.waktuKeluar||'-')+'</td>'+
-    '<td>'+(r.waktuKembali||'-')+'</td>'+
+    '<td>'+
+      '<div class="time-cell">'+
+        '<span class="t-label">Start</span>'+
+        '<span class="t-val">'+waktuKeluar+'</span>'+
+      '</div>'+
+    '</td>'+
+    '<td>'+
+      '<div class="time-cell">'+
+        '<span class="t-label">End</span>'+
+        '<span class="t-val" style="color:'+(r.isLate?'var(--danger)':'var(--success)')+'">'+waktuKembali+'</span>'+
+      '</div>'+
+    '</td>'+
     '<td>'+(r.durasiStr||fmtDur(r.durasi||0))+'</td>'+
     '<td><span class="badge-status '+badgeCls+'">'+statusLabel+'</span></td>'+
+    (canDelete?
+    '<td><button class="btn-icon-only" onclick="deleteRecord(\''+r.id+'\')" title="Hapus record"><i class="fas fa-trash"></i></button></td>'
+    :'')+
     '</tr>';
   }
+
+  var thead='<tr>'+
+    '<th>Nama</th>'+
+    '<th>Jabatan</th>'+
+    '<th>Jobdesk</th>'+
+    '<th>Jenis</th>'+
+    '<th>Tanggal</th>'+
+    '<th>Start Time</th>'+
+    '<th>End Time</th>'+
+    '<th>Durasi</th>'+
+    '<th>Status</th>'+
+    (canDelete?'<th>Aksi</th>':'')+
+    '</tr>';
 
   var tableEl=document.getElementById('rek-table');
   if(tableEl){
     tableEl.innerHTML=
     (filtered.length>0?
-    '<table class="custom-table"><thead><tr><th>Nama</th><th>Jabatan</th><th>Jobdesk</th><th>Jenis</th><th>Tanggal</th><th>Keluar</th><th>Kembali</th><th>Durasi</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table>'
+    '<table class="custom-table"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table>'
     :'<div class="empty"><i class="fas fa-inbox"></i><p>Tidak ada data rekapan.</p></div>');
   }
 }
 
+// ===== PERBAIKAN: fungsi hapus record di rekapan =====
+function deleteRecord(id){
+  if(!confirm('Yakin hapus record izin ini? Data yang dihapus tidak bisa dikembalikan.')) return;
+
+  var allRecs=lsG('records',[]);if(!Array.isArray(allRecs))allRecs=[];
+  var newRecs=[];
+  for(var i=0;i<allRecs.length;i++){
+    if(allRecs[i].id===id){
+      addDeletedId(id);
+      addPending('deleteRecord', {id:id});
+    } else {
+      newRecs.push(allRecs[i]);
+    }
+  }
+  lsS('records',newRecs);
+
+  // Kirim ke server
+  fetchTO(APPS_SCRIPT_URL+'?action=deleteRecord',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({id:id})},5000)
+  .then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);}).catch(function(){});
+
+  renderRekapan();
+}
+
 document.getElementById('rek-filter-btn').addEventListener('click',function(){renderRekapan();});
 
-// === RENDER ADD USER ===
 function renderAddUser(){
   renderUserTable();
   renderSettingsPanel();
@@ -1397,7 +1419,7 @@ function renderUserTable(){
   var rows='';
   for(var i=0;i<users.length;i++){
     var u=users[i];
-    if(u.username==='admin') continue; // jangan tampilkan admin bawaan
+    if(u.username==='admin') continue;
     rows+=
     '<tr>'+
     '<td style="font-weight:700">'+u.nama+'</td>'+
@@ -1531,7 +1553,6 @@ document.getElementById('adduser-form').addEventListener('submit',function(e){
   renderUserTable();
 });
 
-// Role change handler
 document.getElementById('au-role').addEventListener('change',function(){
   var jabatanGroup=document.getElementById('au-jabatan-group');
   if(this.value==='admin'||this.value==='leader'){
@@ -1541,7 +1562,6 @@ document.getElementById('au-role').addEventListener('change',function(){
   }
 });
 
-// === RENDER SET IP ===
 function renderSetIp(){
   var users=lsG('users',[]);if(!Array.isArray(users))users=[];
   var rows='';
@@ -1584,7 +1604,6 @@ document.getElementById('setip-form').addEventListener('submit',function(e){
   setTimeout(function(){msgEl.classList.remove('show');},5000);
 });
 
-// === INIT ===
 init();
 </script>
 </body>
