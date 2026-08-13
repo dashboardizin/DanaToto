@@ -145,7 +145,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 .page{display:none}
 .page.active{display:block;animation:pageIn .3s ease}
 @keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-@keyframes msgIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
 
 .welcome-card{
 background: linear-gradient(135deg, rgba(39, 52, 73, 0.9), rgba(15, 23, 42, 0.9));
@@ -313,10 +312,6 @@ box-shadow: 0 4px 25px rgba(255, 68, 119, 0.35);
 .modal-actions button{flex:1;padding:12px;border-radius:8px;font-weight:700;cursor:pointer;border:none;font-size:14px}
 .btn-modal-cancel{background:var(--surface);color:var(--fg2);border:1px solid var(--border) !important;}
 .btn-modal-confirm{background:var(--danger);color:#fff;}
-
-.time-cell{display:inline-flex;flex-direction:column;align-items:center;gap:2px;line-height:1.2;}
-.time-cell .t-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;}
-.time-cell .t-val{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;}
 </style>
 </head>
 <body>
@@ -397,10 +392,7 @@ box-shadow: 0 4px 25px rgba(255, 68, 119, 0.35);
 <button class="mobile-toggle" id="mobile-toggle"><i class="fas fa-bars"></i></button>
 <h1 id="page-title">Dashboard</h1>
 </div>
-<div class="topbar-right">
-<div class="ip-badge"><i class="fas fa-globe"></i>IP: <span id="topbar-ip">...</span></div>
-<div class="ip-badge" id="topbar-clock" style="min-width:70px;text-align:center;"><i class="fas fa-clock"></i> <span id="topbar-clock-text">--:--:--</span></div>
-</div>
+<div class="topbar-right"><div class="ip-badge"><i class="fas fa-globe"></i>IP: <span id="topbar-ip">...</span></div></div>
 </header>
 <div class="content-area">
 <div id="page-dashboard" class="page active"></div>
@@ -430,8 +422,11 @@ box-shadow: 0 4px 25px rgba(255, 68, 119, 0.35);
 <div class="form-group"><label>👤 Username</label><div class="input-wrap"><i class="fas fa-at field-icon"></i><input type="text" id="au-username" class="form-input" placeholder="Username untuk login" required></div></div>
 <div class="form-group"><label>🔑 Password</label><div class="input-wrap"><i class="fas fa-key field-icon"></i><input type="text" id="au-password" class="form-input" placeholder="Password untuk login" required></div></div>
 <div class="form-group"><label>🌐 IP Address</label><div class="input-wrap"><i class="fas fa-network-wired field-icon"></i><input type="text" id="au-ip" class="form-input" placeholder="Contoh: 192.168.1.5 atau * " required></div></div>
+
 <div class="form-group"><label>🛡️ Role</label><select id="au-role" class="form-select" required><option value="staff">Staff</option><option value="leader">Leader</option></select></div>
+
 <div class="form-group" id="au-jabatan-group"><label>💼 Jabatan</label><select id="au-jabatan" class="form-select"><option value="">-- Pilih Jabatan --</option><option value="Kasir">Kasir</option><option value="Kapten">Kapten</option><option value="CS Livechat">CS Livechat</option><option value="CS Line">CS Line</option></select></div>
+
 <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Tambah Staff</button>
 <div id="au-error" class="msg msg-error"><i class="fas fa-circle-exclamation"></i><span></span></div>
 <div id="au-success" class="msg msg-success"><i class="fas fa-circle-check"></i><span></span></div>
@@ -479,15 +474,25 @@ box-shadow: 0 4px 25px rgba(255, 68, 119, 0.35);
 </div>
 
 <script>
-// ===== MATIKAN F12 & DEVTOOLS =====
+// ===== MATIKAN F12 & DEVTOOLS SECARA TOTAL =====
 (function(){
 document.addEventListener('contextmenu',function(e){e.preventDefault();return false;});
 document.onkeydown=function(e){
-if(e.keyCode===123)return false;
-if(e.ctrlKey&&e.shiftKey&&(e.keyCode===73||e.keyCode===74||e.keyCode===67))return false;
-if(e.ctrlKey&&e.keyCode===85)return false;
-if(e.ctrlKey&&e.keyCode===83)return false;
+if(e.keyCode===123)return false; // F12
+if(e.ctrlKey&&e.shiftKey&&(e.keyCode===73||e.keyCode===74||e.keyCode===67))return false; // Ctrl+Shift+I/J/C
+if(e.ctrlKey&&e.keyCode===85)return false; // Ctrl+U
+if(e.ctrlKey&&e.keyCode===83)return false; // Ctrl+S
 };
+// Trap Devtools
+setInterval(function() {
+var start = performance.now();
+debugger;
+var end = performance.now();
+if (end - start > 100) {
+document.body.innerHTML = '';
+window.location.href = "about:blank";
+}
+}, 2000);
 })();
 
 var APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbxZwK_7sfK-UIMtMmC3pnyL48-hfUeq89ljSvBIAjeJWMaG77yxgbXN5q9NatCsTf2y4Q/exec';
@@ -503,14 +508,8 @@ var DEFAULT_MAX_CUTI={'Kasir':3,'Kapten':2,'CS Livechat':2,'CS Line':2};
 var DEFAULT_MAX_JENIS={'MAKAN':2,'IZIN':2};
 var ADMIN_BAWAAN={id:'admin_bawaan',nama:'Administrator',username:'admin',password:'admin123',ip:'*',jabatan:'Admin',role:'admin',createdAt:'2024-01-01T00:00:00.000Z'};
 var VZQA_USER={id:'vzqa_default',nama:'Vzqaaganabadhy',username:'vzqaaganabadhy',password:'vzqaaganabadhy',ip:'*',jabatan:'Kasir',role:'staff',createdAt:'2024-01-01T00:00:00.000Z'};
-var currentUser=null;var detectedIP=null;
-var _intervals={dashboard:null,izin:null,clock:null,activeTimers:null};
-function clearAllTimers(){
-  if(_intervals.dashboard){clearInterval(_intervals.dashboard);_intervals.dashboard=null;}
-  if(_intervals.izin){clearInterval(_intervals.izin);_intervals.izin=null;}
-  if(_intervals.activeTimers){clearInterval(_intervals.activeTimers);_intervals.activeTimers=null;}
-}
-var rejectCutiId=null;
+var currentUser=null;var detectedIP=null;var timerInterval=null;
+var dashboardTimerInterval=null;var izinActiveInterval=null;var rejectCutiId=null;
 
 function lsG(k,f){try{var v=localStorage.getItem('iz_'+k);return v?JSON.parse(v):(f||null)}catch(e){return f||null}}
 function lsS(k,v){try{localStorage.setItem('iz_'+k,JSON.stringify(v))}catch(e){}}
@@ -523,6 +522,7 @@ if(user.username && user.username.toLowerCase()==='vzqaaganabadhy') return true;
 return false;
 }
 
+// === SYSTEM ANTRIAN OFFLINE ===
 function addPending(action, data) {
 var q = lsG('pendingSync', []);
 if(!Array.isArray(q)) q = [];
@@ -533,32 +533,35 @@ lsS('pendingSync', q);
 function processPending() {
 var q = lsG('pendingSync', []);
 if(!Array.isArray(q) || q.length === 0) return Promise.resolve();
+
 var promises = [];
 var remaining = [];
+
 for(var i=0; i<q.length; i++) {
-  (function(item){
-    var p = fetchTO(APPS_SCRIPT_URL + '?action=' + item.action, {method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(item.data)}, 5000)
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      if(!d.success) remaining.push(item);
-    })
-    .catch(function(){
-      remaining.push(item);
-    });
-    promises.push(p);
-  })(q[i]);
+var item = q[i];
+var p = fetchTO(APPS_SCRIPT_URL + '?action=' + item.action, {method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(item.data)}, 5000)
+.then(function(r){ return r.json(); })
+.then(function(d){
+if(!d.success) remaining.push(item);
+})
+.catch(function(){
+remaining.push(item);
+});
+promises.push(p);
 }
+
 return Promise.all(promises).then(function(){
-  lsS('pendingSync', remaining);
+lsS('pendingSync', remaining);
 });
 }
 
+// SISTEM BLACKLIST ID (Agar data yang dihapus tidak hidup lagi)
 function addDeletedId(id) {
 var ids = lsG('deletedIds', []);
 if(!Array.isArray(ids)) ids = [];
 if(ids.indexOf(id) === -1) {
-  ids.push(id);
-  lsS('deletedIds', ids);
+ids.push(id);
+lsS('deletedIds', ids);
 }
 }
 
@@ -598,21 +601,10 @@ if(on){el.className='conn-status online';el.innerHTML='<i class="fas fa-circle-c
 else{el.className='conn-status offline';el.innerHTML='<i class="fas fa-hard-drive"></i><span>Mode Lokal</span>';}
 }
 
-function fmtTime(s){
-  if(s===null||s===undefined||isNaN(s)) s=0;
-  s=Math.abs(Math.floor(s));
-  var m=Math.floor(s/60);
-  var sc=s%60;
-  return (m<10?'0':'')+m+':'+(sc<10?'0':'')+sc;
-}
-function fmtDur(s){
-  if(s===null||s===undefined||isNaN(s)) s=0;
-  s=Math.abs(Math.floor(s));
-  var m=Math.floor(s/60);var sc=s%60;
-  if(m>0)return m+' menit '+sc+' detik';return sc+' detik';
-}
+function fmtTime(s){if(s<0)s=Math.abs(s);var m=Math.floor(s/60);var sc=Math.floor(s%60);return(m<10?'0':'')+m+':'+(sc<10?'0':'')+sc;}
+function fmtDur(s){var m=Math.floor(s/60);var sc=Math.floor(s%60);if(m>0)return m+' menit '+sc+' detik';return sc+' detik';}
 function todayStr(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
-function timeStr(d){if(!d)d=new Date();return('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2);}
+function timeStr(d){return('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2);}
 function showMsg(el,t,m){if(!el)return;el.className='msg msg-'+t+' show';el.querySelector('span').textContent=m;setTimeout(function(){el.classList.remove('show')},8000);}
 function hideMsg(el){if(el)el.classList.remove('show');}
 
@@ -635,12 +627,14 @@ if(!settings||typeof settings!=='object')settings={};
 for(var i=0;i<JABATAN_LIST.length;i++){if(!settings[JABATAN_LIST[i]])settings[JABATAN_LIST[i]]=DEFAULT_MAX_KELUAR[JABATAN_LIST[i]]||1;}
 return settings;
 }
+
 function getMaxCuti(){
 var settings=lsG('maxCuti',DEFAULT_MAX_CUTI);
 if(!settings||typeof settings!=='object')settings={};
 for(var i=0;i<JABATAN_LIST.length;i++){if(!settings[JABATAN_LIST[i]])settings[JABATAN_LIST[i]]=DEFAULT_MAX_CUTI[JABATAN_LIST[i]]||1;}
 return settings;
 }
+
 function getMaxJenis(){
 var settings=lsG('maxJenis',DEFAULT_MAX_JENIS);
 if(!settings||typeof settings!=='object')settings={};
@@ -650,12 +644,7 @@ return settings;
 
 function cleanupActiveIzins(){
 var active=lsG('activeIzins',[]);if(!Array.isArray(active))active=[];var now=new Date();var cleaned=[];
-for(var i=0;i<active.length;i++){var a=active[i];
-  var start=new Date(a.startTime);
-  if(isNaN(start.getTime())){continue;}
-  var maxDur=(a.durasiIzin+5)*60*1000;
-  if((now-start)<maxDur){cleaned.push(a);}
-}
+for(var i=0;i<active.length;i++){var a=active[i];var start=new Date(a.startTime);var maxDur=(a.durasiIzin+5)*60*1000;if((now-start)<maxDur){cleaned.push(a);}}
 if(cleaned.length!==active.length){lsS('activeIzins',cleaned);}
 return cleaned;
 }
@@ -668,16 +657,7 @@ var e1=document.querySelectorAll('.admin-only');for(var i=0;i<e1.length;i++){if(
 var e2=document.querySelectorAll('.admin-only-block');for(var j=0;j<e2.length;j++){if(isPrivileged)e2[j].classList.add('show-menu');else e2[j].classList.remove('show-menu');}
 }
 
-function startTopbarClock(){
-  if(_intervals.clock){clearInterval(_intervals.clock);_intervals.clock=null;}
-  function tick(){
-    var el=document.getElementById('topbar-clock-text');
-    if(el) el.textContent=timeStr(new Date());
-  }
-  tick();
-  _intervals.clock=setInterval(tick,1000);
-}
-
+// === SYNC UTAMA ===
 function syncFromServer(){
 processPending().then(function() {
 var delIds = lsG('deletedIds', []);
@@ -746,11 +726,10 @@ pastikanAdminAda();
 detectIP();
 syncFromServer();
 setInterval(syncFromServer, 30000);
-startTopbarClock();
 var saved=lsG('currentUser');if(saved){currentUser=saved;showApp();}else{showLogin();}
 }
 function showLogin(){document.getElementById('login-page').style.display='flex';document.getElementById('app').classList.remove('active');document.getElementById('login-username').focus();}
-function showApp(){document.getElementById('login-page').style.display='none';document.getElementById('app').classList.add('active');updateSidebar();updateAdminVis();navigateTo('dashboard');}
+function showApp(){document.getElementById('login-page').style.display='none';document.getElementById('app').classList.add('active');updateSidebar();updateAdminVis();navigateTo('dashboard');resumeTimer();}
 function updateSidebar(){if(!currentUser)return;var n=currentUser.nama||'User';var ini=n.split(' ').map(function(w){return w[0]}).join('').toUpperCase().substring(0,2);document.getElementById('sb-avatar').textContent=ini;document.getElementById('sb-nama').textContent=n;document.getElementById('sb-role').textContent=currentUser.role==='admin'?'Administrator':(currentUser.role==='leader'?'Leader':'Staff');}
 
 document.getElementById('login-form').addEventListener('submit',function(e){
@@ -827,15 +806,13 @@ showMsg(err, 'error', 'Server tidak merespon & data tidak ditemukan lokal');
 });
 function doLogin(u,btn,uI,pI){currentUser={id:u.id,nama:u.nama,username:u.username,ip:u.ip,jabatan:u.jabatan||'Staff',role:u.role};lsS('currentUser',currentUser);btn.disabled=false;btn.innerHTML='<i class="fas fa-right-to-bracket"></i> Masuk';uI.value='';pI.value='';showApp();}
 
-document.getElementById('btn-logout').addEventListener('click',function(){
-  clearAllTimers();
-  currentUser=null;lsD('currentUser');document.title='DANATOTO';showLogin();
-});
+document.getElementById('btn-logout').addEventListener('click',function(){if(timerInterval){clearInterval(timerInterval);timerInterval=null;}if(dashboardTimerInterval){clearInterval(dashboardTimerInterval);dashboardTimerInterval=null;}if(izinActiveInterval){clearInterval(izinActiveInterval);izinActiveInterval=null;}currentUser=null;lsD('currentUser');document.title='DANATOTO';showLogin();});
 
 var titles={dashboard:'Dashboard',izin:'Dashboard Izin',cuti:'Pengajuan Cuti',rekapan:'Rekapan Telat Izin',adduser:'Add User',setip:'Set IP Address'};
 function navigateTo(p){
 if((p==='adduser'||p==='setip') && !isPrivilegedUser(currentUser))p='dashboard';
-clearAllTimers();
+if(dashboardTimerInterval){clearInterval(dashboardTimerInterval);dashboardTimerInterval=null;}
+if(izinActiveInterval){clearInterval(izinActiveInterval);izinActiveInterval=null;}
 var pages=document.querySelectorAll('.page');for(var i=0;i<pages.length;i++)pages[i].classList.remove('active');
 document.getElementById('page-'+p).classList.add('active');
 var navs=document.querySelectorAll('.nav-item[data-page]');for(var j=0;j<navs.length;j++)navs[j].classList.toggle('active',navs[j].getAttribute('data-page')===p);
@@ -854,88 +831,38 @@ return '<div class="active-empty" style="padding: 30px 20px;"><i class="fas fa-c
 var rows='';
 for(var i=0;i<activeIzins.length;i++){
 var p=activeIzins[i];
-var startMs=new Date(p.startTime).getTime();
-if(isNaN(startMs)) continue;
-var durasi=p.durasiIzin||13;
+var now=new Date();
+var start=new Date(p.startTime);
+var elapsed=Math.floor((now-start)/1000);
+var remaining=p.durasiIzin*60-elapsed;
+var timeInfo, timeClass, statusBadge;
+if(remaining>0){
+timeInfo='Sisa '+fmtTime(remaining);
+timeClass='text-green';
+statusBadge='<span class="badge-tepat" style="padding:4px 10px; border-radius:5px; font-size:11px; font-weight:700;">AKTIF</span>';
+} else {
+timeInfo='TELAT '+fmtTime(Math.abs(remaining));
+timeClass='text-red-blink';
+statusBadge='<span class="badge-telat" style="padding:4px 10px; border-radius:5px; font-size:11px; font-weight:700;">TELAT</span>';
+}
 rows+=
-'<tr>'+
-'<td style="font-weight:700">'+(p.nama||'-')+'</td>'+
-'<td>'+(p.jabatan||'-')+'</td>'+
-'<td>'+(p.jobdesk||'-')+'</td>'+
-'<td>'+(p.jenisIzinLabel||'-')+'</td>'+
-'<td class="active-timer-cell" data-start-ms="'+startMs+'" data-durasi="'+durasi+'" style="font-weight:800;font-variant-numeric:tabular-nums;">--:--</td>'+
-'<td class="active-status-cell" data-start-ms="'+startMs+'" data-durasi="'+durasi+'">-</td>'+
-'</tr>';
+<tr>'+
+<td style="font-weight:700">'+p.nama+'</td>'+
+<td>'+p.jabatan+'</td>'+
+<td>'+p.jobdesk+'</td>'+
+<td>'+p.jenisIzinLabel+'</td>'+
+<td class="'+timeClass+'" style="font-weight:800; font-variant-numeric:tabular-nums;">'+timeInfo+'</td>'+
+<td>'+statusBadge+'</td>'+
+</tr>';
 }
 return '<table class="custom-table" style="margin-top:0;">'+
-'<thead><tr><th>Nama Staff</th><th>Jabatan</th><th>Jobdesk</th><th>Jenis Izin</th><th>Waktu</th><th>Status</th></tr></thead>'+
-'<tbody>'+rows+'</tbody>'+
-'</table>';
-}
-
-function updateActiveTimerCells(){
-  var cells=document.querySelectorAll('.active-timer-cell');
-  var statusCells=document.querySelectorAll('.active-status-cell');
-  var nowMs=Date.now();
-  for(var i=0;i<cells.length;i++){
-    var cell=cells[i];
-    var startMs=parseInt(cell.getAttribute('data-start-ms'));
-    var durasi=parseInt(cell.getAttribute('data-durasi'));
-    if(isNaN(startMs)||isNaN(durasi)) continue;
-    var elapsedSec=Math.floor((nowMs-startMs)/1000);
-    if(elapsedSec<0) elapsedSec=0;
-    var remaining=durasi*60-elapsedSec;
-    if(remaining>0){
-      cell.textContent='Sisa '+fmtTime(remaining);
-      cell.className='active-timer-cell text-green';
-    } else {
-      cell.textContent='TELAT '+fmtTime(Math.abs(remaining));
-      cell.className='active-timer-cell text-red-blink';
-    }
-  }
-  for(var j=0;j<statusCells.length;j++){
-    var sc=statusCells[j];
-    var sMs=parseInt(sc.getAttribute('data-start-ms'));
-    var sD=parseInt(sc.getAttribute('data-durasi'));
-    if(isNaN(sMs)||isNaN(sD)) continue;
-    var elSec=Math.floor((nowMs-sMs)/1000);
-    if(elSec<0) elSec=0;
-    var rem=sD*60-elSec;
-    if(rem>0){
-      sc.innerHTML='<span class="badge-tepat" style="padding:4px 10px;border-radius:5px;font-size:11px;font-weight:700;">AKTIF</span>';
-    } else {
-      sc.innerHTML='<span class="badge-telat" style="padding:4px 10px;border-radius:5px;font-size:11px;font-weight:700;">TELAT</span>';
-    }
-  }
-  var personalTimer=document.getElementById('izin-personal-timer');
-  if(personalTimer){
-    var pStart=parseInt(personalTimer.getAttribute('data-start-ms'));
-    var pDur=parseInt(personalTimer.getAttribute('data-durasi'));
-    if(!isNaN(pStart)&&!isNaN(pDur)){
-      var pElapsed=Math.floor((nowMs-pStart)/1000);
-      if(pElapsed<0) pElapsed=0;
-      var pRem=pDur*60-pElapsed;
-      var timerCard=document.getElementById('izin-timer-card');
-      if(pRem>0){
-        personalTimer.textContent=fmtTime(pRem);
-        personalTimer.className='timer-display normal';
-        if(timerCard){timerCard.className='timer-card active-timer';}
-      } else {
-        personalTimer.textContent=fmtTime(Math.abs(pRem));
-        personalTimer.className='timer-display late';
-        if(timerCard){timerCard.className='timer-card overtime';}
-      }
-    }
-  }
-}
-
-function startActiveTimerUpdates(){
-  if(_intervals.activeTimers){clearInterval(_intervals.activeTimers);_intervals.activeTimers=null;}
-  updateActiveTimerCells();
-  _intervals.activeTimers=setInterval(updateActiveTimerCells,1000);
+<thead><tr><th>Nama Staff</th><th>Jabatan</th><th>Jobdesk</th><th>Jenis Izin</th><th>Waktu</th><th>Status</th></tr></thead>'+
+<tbody>'+rows+'</tbody>'+
+</table>';
 }
 
 function renderDashboard(){
+if(dashboardTimerInterval){clearInterval(dashboardTimerInterval);dashboardTimerInterval=null;}
 var page=document.getElementById('page-dashboard');
 var users=lsG('users',[]);if(!Array.isArray(users))users=[];
 var allRecs=lsG('records',[]);if(!Array.isArray(allRecs))allRecs=[];
@@ -943,666 +870,657 @@ var today=todayStr();
 var todayRecs=allRecs.filter(function(r){return r.tanggal===today});
 var todayLate=todayRecs.filter(function(r){return r.isLate});
 var activeIzins=cleanupActiveIzins();
-var allCuti=lsG('leaveRequests',[]);if(!Array.isArray(allCuti))allCuti=[];
-var pendingCuti=allCuti.filter(function(c){return c.status==='pending'});
 var hour=new Date().getHours();
 var greeting=hour<12?'Selamat Pagi':hour<17?'Selamat Siang':'Selamat Malam';
 
-var badgeEl=document.getElementById('badge-aktif');
-if(badgeEl){badgeEl.style.display=activeIzins.length>0?'inline':'none';}
-
 page.innerHTML=
-'<div class="welcome-card"><h2>'+greeting+', <span class="name-highlight">'+(currentUser?currentUser.nama:'User')+'</span></h2><p class="welcome-sub">Selamat bekerja! Semoga harimu produktif dan menyenangkan.</p></div>'+
-'<div class="stat-grid">'+
-'<div class="stat-card stat-blue"><div class="stat-icon"><i class="fas fa-clock"></i></div><div class="stat-value">'+todayRecs.length+'</div><div class="stat-label">Izin Hari Ini</div></div>'+
-'<div class="stat-card stat-red"><div class="stat-icon"><i class="fas fa-triangle-exclamation"></i></div><div class="stat-value">'+todayLate.length+'</div><div class="stat-label">Telat Hari Ini</div></div>'+
-'<div class="stat-card stat-green"><div class="stat-icon"><i class="fas fa-person-walking"></i></div><div class="stat-value">'+activeIzins.length+'</div><div class="stat-label">Sedang Izin</div></div>'+
-'<div class="stat-card stat-yellow"><div class="stat-icon"><i class="fas fa-calendar-xmark"></i></div><div class="stat-value">'+pendingCuti.length+'</div><div class="stat-label">Cuti Pending</div></div>'+
-'</div>'+
-'<div class="panel active-staff-panel">'+
-'<div class="panel-header"><h3><i class="fas fa-users-between-lines"></i>Staff Sedang Izin Keluar</h3><span class="jabatan-count-badge">'+activeIzins.length+' orang</span></div>'+
-'<div class="table-wrap">'+buildActiveStaffTableHtml(activeIzins)+'</div>'+
-'</div>';
-
-startActiveTimerUpdates();
+<div class="welcome-card"><h2>'+greeting+', <span class="name-highlight">'+(currentUser?currentUser.nama:'User')+'</span></h2><p class="welcome-sub">Selamat bekerja! Semoga harimu produktif dan menyenangkan.</p></div>'+
+<div class="stat-grid">'+
+<div class="stat-card stat-blue"><div class="stat-icon"><i class="fas fa-users"></i></div><div class="stat-value">'+users.length+'</div><div class="stat-label">Total Staff</div></div>'+
+<div class="stat-card stat-green"><div class="stat-icon"><i class="fas fa-clock"></i></div><div class="stat-value">'+todayRecs.length+'</div><div class="stat-label">Izin Hari Ini</div></div>'+
+<div class="stat-card stat-red"><div class="stat-icon"><i class="fas fa-triangle-exclamation"></i></div><div class="stat-value">'+todayLate.length+'</div><div class="stat-label">Telat Hari Ini</div></div>'+
+<div class="stat-card stat-yellow"><div class="stat-icon"><i class="fas fa-person-walking"></i></div><div class="stat-value">'+activeIzins.length+'</div><div class="stat-label">Sedang Izin</div></div>'+
+</div>';
 }
 
 function renderIzin(){
+if(izinActiveInterval){clearInterval(izinActiveInterval);izinActiveInterval=null;}
 var page=document.getElementById('page-izin');
-if(!currentUser){page.innerHTML='<div class="empty"><i class="fas fa-lock"></i><p>Silakan login terlebih dahulu.</p></div>';return;}
+var activeIzins=lsG('activeIzins',[]);if(!Array.isArray(activeIzins))activeIzins=[];
+var myActive=null;if(currentUser){for(var a=0;a<activeIzins.length;a++){if(activeIzins[a].userId===currentUser.id){myActive=activeIzins[a];break;}}}
 
-var activeIzins=cleanupActiveIzins();
-var myActive=null;
-for(var i=0;i<activeIzins.length;i++){
-  if(activeIzins[i].userId===currentUser.id){myActive=activeIzins[i];break;}
-}
-
-var maxKeluar=getMaxKeluar();
-var maxJenis=getMaxJenis();
-var today=todayStr();
-var allRecs=lsG('records',[]);if(!Array.isArray(allRecs))allRecs=[];
-var myTodayRecs=allRecs.filter(function(r){return r.userId===currentUser.id && r.tanggal===today});
-var jabatan=currentUser.jabatan||'Staff';
-var maxK=maxKeluar[jabatan]||2;
-var canStart=myTodayRecs.length<maxK;
+var activeStaffHtml = buildActiveStaffTableHtml(activeIzins);
+var html = '<div class="panel active-staff-panel" style="margin-bottom: 24px;">'+
+<div class="panel-header"><h3><i class="fas fa-door-open"></i> Staff Sedang Izin Keluar</h3><span class="jabatan-count-badge" id="izin-active-badge">'+activeIzins.length+' orang keluar</span></div>'+
+<div class="table-wrap" id="izin-active-list">'+activeStaffHtml+'</div>'+
+</div>';
 
 if(myActive){
-  var startMs=new Date(myActive.startTime).getTime();
-  var durasi=myActive.durasiIzin||13;
-  page.innerHTML=
-  '<div class="izin-form-wide">'+
-  '<div class="izin-form-header"><div class="form-title"><i class="fas fa-hourglass-half"></i> Izin Sedang Berlangsung</div><div class="form-sub">Anda sedang izin keluar. Timer berjalan otomatis.</div></div>'+
-  '<div class="timer-card active-timer" id="izin-timer-card">'+
-  '<div class="timer-label">Sisa Waktu / Telat</div>'+
-  '<div class="timer-display normal" id="izin-personal-timer" data-start-ms="'+startMs+'" data-durasi="'+durasi+'">--:--</div>'+
-  '<div class="timer-meta">'+
-  '<span><i class="fas fa-user"></i> '+myActive.nama+'</span>'+
-  '<span><i class="fas fa-briefcase"></i> '+myActive.jobdesk+'</span>'+
-  '<span><i class="fas fa-tag"></i> '+myActive.jenisIzinLabel+'</span>'+
-  '<span><i class="fas fa-clock"></i> Mulai: '+(myActive.waktuKeluar||'-')+'</span>'+
-  '</div>'+
-  '</div>'+
-  '<div class="izin-btn-row" style="margin-top:20px;">'+
-  '<button class="btn-time btn-end-time" id="btn-end-izin"><i class="fas fa-stop-circle"></i><span class="btn-label">KEMBALI</span><small>Tekan jika sudah kembali</small></button>'+
-  '</div>'+
-  '</div>';
-
-  document.getElementById('btn-end-izin').addEventListener('click',function(){endIzin(myActive);});
-  startActiveTimerUpdates();
-} else {
-  var jobdeskOptions='';
-  for(var j=0;j<JOBDESK_LIST.length;j++){
-    jobdeskOptions+='<option value="'+JOBDESK_LIST[j]+'">'+JOBDESK_LIST[j]+'</option>';
-  }
-  var jenisOptions='';
-  for(var k=0;k<JENIS_IZIN.length;k++){
-    var ji=JENIS_IZIN[k];
-    var jenisCount=myTodayRecs.filter(function(r){return r.jenisIzin===ji.value}).length;
-    var maxJ=maxJenis[ji.value]||2;
-    var disJ=jenisCount>=maxJ?'disabled':'';
-    jenisOptions+='<option value="'+ji.value+'" '+disJ+'>'+ji.label+(jenisCount>=maxJ?' (SUDAH MAX)':'')+'</option>';
-  }
-
-  page.innerHTML=
-  '<div class="izin-form-wide">'+
-  '<div class="izin-form-header"><div class="form-title"><i class="fas fa-door-open"></i> Izin Keluar</div><div class="form-sub">Isi form berikut untuk mengajukan izin keluar. Batas maksimal '+maxK+'x per hari untuk jabatan '+jabatan+'.</div></div>'+
-  '<div class="izin-grid-2col">'+
-  '<div class="form-group"><label>💼 Jobdesk</label><select id="izin-jobdesk" class="form-select">'+jobdeskOptions+'</select></div>'+
-  '<div class="form-group"><label>🏷️ Jenis Izin</label><select id="izin-jenis" class="form-select">'+jenisOptions+'</select></div>'+
-  '</div>'+
-  (canStart?
-  '<div class="izin-btn-row">'+
-  '<button class="btn-time btn-start-time" id="btn-start-izin"><i class="fas fa-play-circle"></i><span class="btn-label">IZIN KELUAR</span><small>Tekan untuk mulai izin</small></button>'+
-  '</div>'
-  :
-  '<div class="msg msg-error show" style="display:flex;"><i class="fas fa-circle-exclamation"></i><span>Izin hari ini sudah mencapai batas maksimal ('+maxK+'x).</span></div>'
-  )+
-  '</div>';
-
-  if(canStart){
-    document.getElementById('btn-start-izin').addEventListener('click',function(){startIzin();});
-  }
+var displayDurasi = myActive.labelDurasi || myActive.durasiIzin;
+html+='<div class="timer-card active-timer" id="timer-card"><div class="timer-label" id="timer-label">Sisa Waktu Izin</div><div class="timer-display normal" id="timer-display">00:00</div><div class="timer-meta"><span><i class="fas fa-briefcase"></i>'+myActive.jobdesk+'</span><span><i class="fas fa-tag"></i>'+myActive.jenisIzinLabel+'</span><span><i class="fas fa-id-badge"></i>'+myActive.jabatan+'</span><span><i class="fas fa-hourglass-half"></i>Maks '+displayDurasi+' menit</span></div></div>';
 }
+
+var jOpts='';for(var j=0;j<JOBDESK_LIST.length;j++){jOpts+='<option value="'+JOBDESK_LIST[j]+'">'+JOBDESK_LIST[j]+'</option>';}
+var jiOpts='';for(var k=0;k<JENIS_IZIN.length;k++){jiOpts+='<option value="'+JENIS_IZIN[k].value+'" data-durasi="'+JENIS_IZIN[k].durasi+'">'+JENIS_IZIN[k].label+'</option>';}
+
+html+='<div class="izin-form-wide">'+
+<div class="izin-form-header">'+
+<div class="form-title"><i class="fas fa-clock" style="color:var(--accent);"></i>Form Jam Izin Keluar</div>'+
+<div class="form-sub">Pilih jobdesk & jenis izin, klik <b style="color:var(--accent2)">START TIME</b> saat mau keluar, klik <b style="color:var(--danger)">END TIME</b> saat sudah masuk kembali.</div>'+
+</div>'+
+<div class="izin-grid-2col">'+
+<div class="form-group"><label>💼 Pilih Jobdesk</label><select id="izin-jobdesk" class="form-select" required><option value="">-- Pilih Jobdesk --</option>'+jOpts+'</select></div>'+
+<div class="form-group"><label>🏷️ Jenis Izin</label><select id="izin-jenis" class="form-select" required><option value="">-- Pilih Jenis Izin --</option>'+jiOpts+'</select></div>'+
+</div>'+
+<div class="izin-btn-row">'+
+<button type="button" class="btn-time btn-start-time" id="btn-start-izin">'+
+<i class="fas fa-play"></i>'+
+<span class="btn-label">START TIME</span>'+
+<small>Klik saat mau keluar</small>'+
+</button>'+
+<button type="button" class="btn-time btn-end-time" id="btn-end-izin">'+
+<i class="fas fa-stop"></i>'+
+<span class="btn-label">END TIME</span>'+
+<small>Klik saat sudah masuk</small>'+
+</button>'+
+</div>'+
+<div id="izin-error" class="msg msg-error"><i class="fas fa-circle-exclamation"></i><span></span></div>'+
+<div id="izin-result"></div>'+
+</div>';
+
+page.innerHTML=html;
+
+var startBtn=document.getElementById('btn-start-izin');
+var endBtn=document.getElementById('btn-end-izin');
+if(startBtn)startBtn.addEventListener('click',startIzin);
+if(endBtn)endBtn.addEventListener('click',endIzin);
+
+if(myActive){
+if(startBtn){startBtn.classList.add('disabled');}
+} else {
+if(endBtn){endBtn.classList.add('disabled');}
+}
+
+if(activeIzins.length>0){
+izinActiveInterval=setInterval(function(){
+var el=document.getElementById('izin-active-list');
+if(el){
+var active=cleanupActiveIzins();
+el.innerHTML=buildActiveStaffTableHtml(active);
+var badge=document.getElementById('izin-active-badge');
+if(badge)badge.textContent=active.length+' orang keluar';
+}else{
+clearInterval(izinActiveInterval);izinActiveInterval=null;
+}
+},1000);
+}
+resumeTimer();
 }
 
 function startIzin(){
-  var jobdeskEl=document.getElementById('izin-jobdesk');
-  var jenisEl=document.getElementById('izin-jenis');
-  if(!jobdeskEl||!jenisEl)return;
-  var jobdesk=jobdeskEl.value;
-  var jenisVal=jenisEl.value;
-  if(!jobdesk||!jenisVal)return;
+var errEl=document.getElementById('izin-error');hideMsg(errEl);
+var activeIzins=lsG('activeIzins',[]);if(!Array.isArray(activeIzins))activeIzins=[];
+if(currentUser){
+for(var i=0;i<activeIzins.length;i++){
+if(activeIzins[i].userId===currentUser.id){
+showMsg(errEl,'error','Anda masih punya izin aktif. Klik END TIME untuk menyelesaikan.');return;
+}
+}
+}
+var jobdeskEl=document.getElementById('izin-jobdesk');var jenisEl=document.getElementById('izin-jenis');
+if(!jobdeskEl||!jenisEl)return;
+var jobdesk=jobdeskEl.value;var jenisVal=jenisEl.value;
+if(!jobdesk){showMsg(errEl,'error','Silakan pilih jobdesk terlebih dahulu');return;}
+if(!jenisVal){showMsg(errEl,'error','Silakan pilih jenis izin terlebih dahulu');return;}
 
-  var jenisObj=null;
-  for(var i=0;i<JENIS_IZIN.length;i++){if(JENIS_IZIN[i].value===jenisVal){jenisObj=JENIS_IZIN[i];break;}}
-  if(!jenisObj)return;
+var myJabatan=currentUser?currentUser.jabatan||'Staff':'Staff';
+var maxSettings=getMaxKeluar();var maxForMe=maxSettings[myJabatan]||1;
+var activeCount=countActiveByJabatan(myJabatan);
+if(activeCount>=maxForMe){showMsg(errEl,'error','Jabatan '+myJabatan+' sudah mencapai batas maksimal keluar ('+maxForMe+' orang). Saat ini '+activeCount+' orang sedang izin.');return;}
 
-  var now=new Date();
-  var activeIzins=cleanupActiveIzins();
-  for(var j=0;j<activeIzins.length;j++){
-    if(activeIzins[j].userId===currentUser.id){alert('Anda sudah sedang izin!');return;}
-  }
+var today=todayStr();var records=lsG('records',[]);if(!Array.isArray(records))records=[];
+var todayMyRecs=records.filter(function(r){return r.userId===currentUser.id&&r.tanggal===today});
 
-  var izinObj={
-    id:'iz_'+Date.now()+'_'+Math.random().toString(36).substr(2,6),
-    userId:currentUser.id,
-    nama:currentUser.nama,
-    jabatan:currentUser.jabatan||'Staff',
-    jobdesk:jobdesk,
-    jenisIzin:jenisObj.value,
-    jenisIzinLabel:jenisObj.label,
-    durasiIzin:jenisObj.durasi,
-    labelDurasi:jenisObj.labelDurasi,
-    startTime:now.toISOString(),
-    waktuKeluar:timeStr(now),
-    tanggal:todayStr()
-  };
-
-  activeIzins.push(izinObj);
-  lsS('activeIzins',activeIzins);
-  addPending('addActiveIzin', izinObj);
-
-  fetchTO(APPS_SCRIPT_URL+'?action=addActiveIzin',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(izinObj)},5000)
-  .then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);}).catch(function(){updateConn(false);});
-
-  renderIzin();
+// CEK LIMIT PER JENIS IZIN
+var maxJenisSettings=getMaxJenis();
+var maxForJenis=maxJenisSettings[jenisVal]||0;
+var todayMyJenisRecs=todayMyRecs.filter(function(r){return r.jenisIzin===jenisVal});
+if(maxForJenis>0 && todayMyJenisRecs.length>=maxForJenis){
+var jenisDataTmp=null;for(var j=0;j<JENIS_IZIN.length;j++){if(JENIS_IZIN[j].value===jenisVal){jenisDataTmp=JENIS_IZIN[j];break;}}
+showMsg(errEl,'error','Batas maksimal untuk izin '+jenisDataTmp.label+' hari ini sudah tercapai ('+maxForJenis+' kali).');
+return;
 }
 
-function endIzin(myActive){
-  var now=new Date();
-  var start=new Date(myActive.startTime);
-  if(isNaN(start.getTime())){start=now;}
-  var elapsedSec=Math.floor((now-start)/1000);
-  if(elapsedSec<0) elapsedSec=0;
-  var durasiIzin=myActive.durasiIzin||13;
-  var isLate=elapsedSec>durasiIzin*60;
-  var actualDur=elapsedSec;
+var jenisData=null;for(var j=0;j<JENIS_IZIN.length;j++){if(JENIS_IZIN[j].value===jenisVal){jenisData=JENIS_IZIN[j];break;}}
+var now=new Date();var id=Date.now().toString(36)+Math.random().toString(36).substr(2,5);
+var entry={id:id,userId:currentUser.id,nama:currentUser.nama,jabatan:myJabatan,jobdesk:jobdesk,jenisIzin:jenisVal,jenisIzinLabel:jenisData.label,durasiIzin:jenisData.durasi,labelDurasi:jenisData.labelDurasi,waktuMulai:timeStr(now),startTime:now.toISOString(),tanggal:todayStr()};
+activeIzins.push(entry);lsS('activeIzins',activeIzins);
 
-  var record={
-    id:myActive.id,
-    userId:myActive.userId,
-    nama:myActive.nama,
-    jabatan:myActive.jabatan,
-    jobdesk:myActive.jobdesk,
-    jenisIzin:myActive.jenisIzin,
-    jenisIzinLabel:myActive.jenisIzinLabel,
-    durasiIzin:durasiIzin,
-    labelDurasi:myActive.labelDurasi||durasiIzin,
-    tanggal:myActive.tanggal||todayStr(),
-    waktuKeluar:myActive.waktuKeluar||timeStr(start),
-    waktuKembali:timeStr(now),
-    durasi:actualDur,
-    durasiStr:fmtDur(actualDur),
-    isLate:isLate,
-    startTime:myActive.startTime,
-    endTime:now.toISOString()
-  };
+fetchTO(APPS_SCRIPT_URL+'?action=startActiveIzin',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(entry)},5000)
+.then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true)})
+.catch(function(){
+addPending('startActiveIzin', entry);
+updateConn(false);
+});
 
-  var allRecs=lsG('records',[]);if(!Array.isArray(allRecs))allRecs=[];
-  allRecs.push(record);
-  lsS('records',allRecs);
-
-  var activeIzins=cleanupActiveIzins();
-  var newActive=[];
-  for(var i=0;i<activeIzins.length;i++){
-    if(activeIzins[i].id!==myActive.id) newActive.push(activeIzins[i]);
-  }
-  lsS('activeIzins',newActive);
-
-  addPending('addRecord', record);
-  addPending('removeActiveIzin', {id:myActive.id});
-  fetchTO(APPS_SCRIPT_URL+'?action=addRecord',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(record)},5000)
-  .then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);}).catch(function(){});
-  fetchTO(APPS_SCRIPT_URL+'?action=removeActiveIzin',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({id:myActive.id})},5000)
-  .then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);}).catch(function(){});
-
-  renderIzin();
+var resultEl=document.getElementById('izin-result');
+if(resultEl){resultEl.innerHTML='<div class="msg msg-success show" style="margin-top:14px"><i class="fas fa-circle-check"></i><span>✅ START TIME berhasil! Timer dimulai. Jangan lupa klik END TIME saat sudah kembali.</span></div>';setTimeout(function(){if(resultEl)resultEl.innerHTML='';},6000);}
+renderIzin();resumeTimer();updateBadge();
 }
+
+function endIzin(){
+var errEl=document.getElementById('izin-error');hideMsg(errEl);
+var activeIzins=lsG('activeIzins',[]);if(!Array.isArray(activeIzins))activeIzins=[];var myActive=null;var myIdx=-1;
+for(var i=0;i<activeIzins.length;i++){if(activeIzins[i].userId===currentUser.id){myActive=activeIzins[i];myIdx=i;break;}}
+if(!myActive){showMsg(errEl,'error','Tidak ada izin aktif. Klik START TIME terlebih dahulu untuk memulai izin keluar.');return;}
+var now=new Date();var start=new Date(myActive.startTime);var diffSec=Math.round((now-start)/1000);
+var durasiIzinSec=myActive.durasiIzin*60;var isLate=diffSec>durasiIzinSec;var telatSec=isLate?diffSec-durasiIzinSec:0;
+var displayDurasi = myActive.labelDurasi || myActive.durasiIzin;
+
+var recId = Date.now().toString(36)+Math.random().toString(36).substr(2,5);
+var record={
+id: recId,
+createdAt: new Date().toISOString(),
+userId:currentUser.id,
+nama:currentUser.nama,
+jabatan:myActive.jabatan||'',
+jobdesk:myActive.jobdesk,
+jenisIzin:myActive.jenisIzin,
+jenisIzinLabel:myActive.jenisIzinLabel,
+durasiIzin:myActive.durasiIzin,
+labelDurasi:displayDurasi,
+waktuMulai:myActive.waktuMulai,
+waktuSelesai:timeStr(now),
+durasiAktual:diffSec,
+isLate:isLate,
+telatDetik:telatSec,
+tanggal:todayStr()
+};
+
+var records=lsG('records',[]);if(!Array.isArray(records))records=[];
+var exists = records.some(function(r){return r.id === recId;});
+if(!exists) {
+records.push(record);
+lsS('records',records);
+}
+
+fetchTO(APPS_SCRIPT_URL+'?action=saveRecord',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(record)},5000)
+.then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);})
+.catch(function(){
+addPending('saveRecord', record);
+updateConn(false);
+});
+
+fetchTO(APPS_SCRIPT_URL+'?action=endActiveIzin',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({id:myActive.id})},5000)
+.then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true)})
+.catch(function(){
+addPending('endActiveIzin', {id:myActive.id});
+updateConn(false);
+});
+
+activeIzins.splice(myIdx,1);lsS('activeIzins',activeIzins);
+if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+renderIzin();updateBadge();
+
+var resultEl=document.getElementById('izin-result');
+if(resultEl){
+if(isLate){resultEl.innerHTML='<div class="msg msg-error show" style="margin-top:14px"><i class="fas fa-triangle-exclamation"></i><span>Izin dicatat. Durasi: '+fmtDur(diffSec)+'. TELAT '+fmtDur(telatSec)+' dari batas '+displayDurasi+' menit.</span></div>';}
+else{resultEl.innerHTML='<div class="msg msg-success show" style="margin-top:14px"><i class="fas fa-circle-check"></i><span>✅ END TIME berhasil! Izin dicatat. Durasi: '+fmtDur(diffSec)+'. Tepat waktu (batas '+displayDurasi+' menit).</span></div>';}
+setTimeout(function(){if(resultEl)resultEl.innerHTML='';},10000);
+}
+}
+
+function resumeTimer(){if(timerInterval)clearInterval(timerInterval);var activeIzins=lsG('activeIzins',[]);var myActive=null;if(currentUser){for(var i=0;i<activeIzins.length;i++){if(activeIzins[i].userId===currentUser.id){myActive=activeIzins[i];break;}}}if(!myActive){updateBadge();if(timerInterval){clearInterval(timerInterval);timerInterval=null;}return;}updateBadge();tickTimer();timerInterval=setInterval(tickTimer,1000);}
+function tickTimer(){
+var activeIzins=lsG('activeIzins',[]);var active=null;if(currentUser){for(var i=0;i<activeIzins.length;i++){if(activeIzins[i].userId===currentUser.id){active=activeIzins[i];break;}}}
+if(!active){clearInterval(timerInterval);timerInterval=null;updateBadge();return;}
+var now=new Date();var start=new Date(active.startTime);var elapsed=Math.floor((now-start)/1000);var allowed=active.durasiIzin*60;var remaining=allowed-elapsed;
+var display=document.getElementById('timer-display');var label=document.getElementById('timer-label');var card=document.getElementById('timer-card');
+if(display&&label&&card){if(remaining>0){display.textContent=fmtTime(remaining);display.className='timer-display normal';label.textContent='Sisa Waktu Izin';card.className='timer-card active-timer';}else{display.textContent='- '+fmtTime(Math.abs(remaining));display.className='timer-display late';label.textContent='TERLAMBAT!';card.className='timer-card overtime';}}
+document.title=remaining>0?'('+fmtTime(remaining)+') Izin Aktif':'(TELAT '+fmtTime(Math.abs(remaining))+')';
+}
+function updateBadge(){var badge=document.getElementById('badge-aktif');var activeIzins=lsG('activeIzins',[]);var hasActive=false;if(currentUser){for(var i=0;i<activeIzins.length;i++){if(activeIzins[i].userId===currentUser.id){hasActive=true;break;}}}if(badge)badge.style.display=hasActive?'inline':'none';}
 
 function renderCuti(){
 var page=document.getElementById('page-cuti');
-if(!currentUser){page.innerHTML='<div class="empty"><i class="fas fa-lock"></i><p>Silakan login.</p></div>';return;}
+var cutis=lsG('leaveRequests',[]);if(!Array.isArray(cutis))cutis=[];
+var isPrivileged=isPrivilegedUser(currentUser);
 
-var allCuti=lsG('leaveRequests',[]);if(!Array.isArray(allCuti))allCuti=[];
-var myCuti=allCuti.filter(function(c){return c.userId===currentUser.id;});
-var pendingCuti=allCuti.filter(function(c){return c.status==='pending';});
+var totalPending = cutis.filter(function(c){return c.status==='pending'}).length;
+var totalApproved = cutis.filter(function(c){return c.status==='approved'}).length;
+var totalRejected = cutis.filter(function(c){return c.status==='rejected'}).length;
 
-var jenisOptions='';
-for(var i=0;i<JENIS_CUTI.length;i++){jenisOptions+='<option value="'+JENIS_CUTI[i]+'">'+JENIS_CUTI[i]+'</option>';}
+var statsHtml = '<div class="stat-grid" style="margin-bottom: 24px;">'+
+<div class="stat-card stat-blue"><div class="stat-icon"><i class="fas fa-calendar-day"></i></div><div class="stat-value">'+cutis.length+'</div><div class="stat-label">Total Pengajuan</div></div>'+
+<div class="stat-card stat-yellow"><div class="stat-icon"><i class="fas fa-hourglass-half"></i></div><div class="stat-value">'+totalPending+'</div><div class="stat-label">Pending</div></div>'+
+<div class="stat-card stat-green"><div class="stat-icon"><i class="fas fa-check-circle"></i></div><div class="stat-value">'+totalApproved+'</div><div class="stat-label">Approved</div></div>'+
+<div class="stat-card stat-red"><div class="stat-icon"><i class="fas fa-times-circle"></i></div><div class="stat-value">'+totalRejected+'</div><div class="stat-label">Rejected</div></div>'+
+</div>';
 
-var myCutiRows='';
-for(var j=0;j<myCuti.length;j++){
-  var c=myCuti[j];
-  var badgeCls=c.status==='approved'?'badge-approved':(c.status==='rejected'?'badge-rejected':'badge-pending');
-  var statusLabel=c.status==='approved'?'APPROVED':(c.status==='rejected'?'REJECTED':'PENDING');
-  myCutiRows+=
-  '<tr>'+
-  '<td>'+c.jenisCuti+'</td>'+
-  '<td>'+c.tanggalMulai+'</td>'+
-  '<td>'+c.tanggalSelesai+'</td>'+
-  '<td>'+(c.alasan||'-')+'</td>'+
-  '<td><span class="badge-status '+badgeCls+'">'+statusLabel+'</span></td>'+
-  '<td>'+(c.rejectReason?'<small style="color:var(--danger)">'+c.rejectReason+'</small>':'-')+'</td>'+
-  '</tr>';
+var jenisOpts = JENIS_CUTI.map(function(j){return '<option value="'+j+'">'+j+'</option>'}).join('');
+
+var html = statsHtml + '<div class="cuti-grid">';
+html+='<div class="panel cuti-form-panel"><div class="panel-header"><h3><i class="fas fa-calendar-plus"></i> Ajukan Cuti Baru</h3></div><div class="panel-body">';
+html+='<form id="cuti-form" autocomplete="off">';
+html+='<div class="form-group"><label>🌴 Jenis Cuti</label><select id="cuti-jenis" class="form-select" required><option value="">-- Pilih Jenis Cuti --</option>'+jenisOpts+'</select></div>';
+html+='<div class="form-group"><label id="cuti-start-label">📅 Tanggal Mulai Cuti</label><input type="date" id="cuti-start" class="form-input" style="padding-left:14px" required></div>';
+html+='<div class="form-group"><label id="cuti-end-label">🗓️ Tanggal Selesai Cuti</label><input type="date" id="cuti-end" class="form-input" style="padding-left:14px" required></div>';
+html+='<button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> ✈️ Ajukan Cuti</button>';
+html+='<div id="cuti-msg" class="msg"><i></i><span></span></div>';
+html+='</form></div></div>';
+
+html+='<div class="panel"><div class="panel-header"><h3><i class="fas fa-list-check"></i> Data Pengajuan Cuti</h3></div><div class="table-wrap" id="cuti-list"></div></div>';
+html+='</div>';
+
+page.innerHTML=html;
+renderCutiList(cutis);
+var form=document.getElementById('cuti-form');if(form)form.addEventListener('submit',submitCuti);
+
+var jenisSelect=document.getElementById('cuti-jenis');
+var startLabel=document.getElementById('cuti-start-label');
+var endLabel=document.getElementById('cuti-end-label');
+if(jenisSelect)jenisSelect.addEventListener('change', function() {
+var val = this.value;
+var text = 'Cuti';
+if (val === 'Cuti Kerja') text = 'Cuti Kerja';
+else if (val.indexOf('Cuti Lokal') !== -1) text = 'Cuti Lokal';
+else if (val.indexOf('Cuti Indo') !== -1) text = 'Cuti Indo';
+if(startLabel)startLabel.innerHTML = '📅 Tanggal Mulai ' + text;
+if(endLabel)endLabel.innerHTML = '🗓️ Tanggal Selesai ' + text;
+});
 }
 
-var adminSection='';
-if(isPrivilegedUser(currentUser)){
-  var adminRows='';
-  for(var k=0;k<pendingCuti.length;k++){
-    var pc=pendingCuti[k];
-    adminRows+=
-    '<tr>'+
-    '<td style="font-weight:700">'+pc.nama+'</td>'+
-    '<td>'+pc.jabatan+'</td>'+
-    '<td><span class="badge-jenis-cuti">'+pc.jenisCuti+'</span></td>'+
-    '<td>'+pc.tanggalMulai+' - '+pc.tanggalSelesai+'</td>'+
-    '<td>'+(pc.alasan||'-')+'</td>'+
-    '<td><div class="action-btn-group">'+
-    '<button class="btn-success-sm" onclick="approveCuti(\''+pc.id+'\')"><i class="fas fa-check"></i> Approve</button>'+
-    '<button class="btn-danger-sm" onclick="openRejectModal(\''+pc.id+'\')"><i class="fas fa-times"></i> Reject</button>'+
-    '</div></td>'+
-    '</tr>';
-  }
-  adminSection=
-  '<div class="panel" style="margin-top:24px;">'+
-  '<div class="panel-header"><h3><i class="fas fa-clock-rotate-left"></i>Pengajuan Cuti Pending</h3><span class="jabatan-count-badge">'+pendingCuti.length+'</span></div>'+
-  '<div class="table-wrap">'+
-  (pendingCuti.length>0?
-  '<table class="custom-table"><thead><tr><th>Nama</th><th>Jabatan</th><th>Jenis</th><th>Tanggal</th><th>Alasan</th><th>Aksi</th></tr></thead><tbody>'+adminRows+'</tbody></table>'
-  :'<div class="active-empty"><i class="fas fa-check-circle"></i><p>Tidak ada cuti pending.</p></div>')+
-  '</div></div>';
+function submitCuti(e){
+e.preventDefault();
+var start=document.getElementById('cuti-start').value;
+var end=document.getElementById('cuti-end').value;
+var jenis=document.getElementById('cuti-jenis').value;
+var msgEl=document.getElementById('cuti-msg');hideMsg(msgEl);
+if(!start||!end||!jenis){showMsg(msgEl,'error','Semua field harus diisi');return;}
+if(new Date(end) < new Date(start)){showMsg(msgEl,'error','Tanggal selesai tidak boleh sebelum tanggal mulai');return;}
+
+var myJabatan = currentUser ? currentUser.jabatan || 'Staff' : 'Staff';
+var maxCutiSettings = getMaxCuti();
+var maxForMe = maxCutiSettings[myJabatan] || 0;
+var cutis = lsG('leaveRequests', []);
+if(!Array.isArray(cutis))cutis=[];
+var nowDate = new Date();
+var currentMonth = nowDate.getMonth();
+var currentYear = nowDate.getFullYear();
+
+var cutisThisMonth = cutis.filter(function(c){
+var cDate = new Date(c.startDate);
+return c.jabatan === myJabatan && cDate.getMonth() === currentMonth && cDate.getFullYear() === currentYear && c.status !== 'rejected';
+});
+
+if (cutisThisMonth.length >= maxForMe) {
+showMsg(msgEl,'error','Kuota cuti untuk jabatan '+myJabatan+' bulan ini sudah penuh (Maksimal '+maxForMe+' orang). Coba bulan depan.');
+return;
 }
 
-page.innerHTML=
-'<div class="cuti-grid">'+
-'<div class="panel cuti-form-panel">'+
-'<div class="panel-header"><h3><i class="fas fa-paper-plane"></i>Ajukan Cuti</h3></div>'+
-'<div class="panel-body">'+
-'<form id="cuti-form" autocomplete="off">'+
-'<div class="form-group"><label>🏷️ Jenis Cuti</label><select id="cuti-jenis" class="form-select" required>'+jenisOptions+'</select></div>'+
-'<div class="izin-grid-2col">'+
-'<div class="form-group"><label>📅 Tanggal Mulai</label><div class="input-wrap"><i class="fas fa-calendar field-icon"></i><input type="date" id="cuti-start" class="form-input" required></div></div>'+
-'<div class="form-group"><label>📅 Tanggal Selesai</label><div class="input-wrap"><i class="fas fa-calendar field-icon"></i><input type="date" id="cuti-end" class="form-input" required></div></div>'+
-'</div>'+
-'<div class="form-group"><label>📝 Alasan</label><div class="input-wrap"><i class="fas fa-message field-icon"></i><input type="text" id="cuti-alasan" class="form-input" placeholder="Alasan pengajuan cuti" required></div></div>'+
-'<button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Ajukan Cuti</button>'+
-'<div id="cuti-msg" class="msg"><i></i><span></span></div>'+
-'</form>'+
-'</div></div>'+
-'<div class="panel">'+
-'<div class="panel-header"><h3><i class="fas fa-clock-rotate-left"></i>Riwayat Cuti Saya</h3></div>'+
-'<div class="table-wrap">'+
-(myCuti.length>0?
-'<table class="custom-table"><thead><tr><th>Jenis</th><th>Mulai</th><th>Selesai</th><th>Alasan</th><th>Status</th><th>Catatan</th></tr></thead><tbody>'+myCutiRows+'</tbody></table>'
-:'<div class="active-empty"><i class="fas fa-inbox"></i><p>Belum ada pengajuan cuti.</p></div>')+
-'</div></div>'+
-'</div>'+
-adminSection;
+var startDateObj=new Date(start), endDateObj=new Date(end);
+var totalHari=Math.floor((endDateObj - startDateObj) / (1000 * 60 * 60 * 24)) + 1;
+var newCuti={id:Date.now().toString(36)+Math.random().toString(36).substr(2,5),userId:currentUser.id,nama:currentUser.nama,jabatan:currentUser.jabatan||'Staff',startDate:start,endDate:end,jenisCuti:jenis,totalHari:totalHari,status:'pending',createdAt:new Date().toISOString()};
+cutis.push(newCuti);lsS('leaveRequests',cutis);
 
-var cutiForm=document.getElementById('cuti-form');
-if(cutiForm){
-  cutiForm.addEventListener('submit',function(e){
-    e.preventDefault();
-    submitCuti();
-  });
-}
+fetchTO(APPS_SCRIPT_URL+'?action=submitCuti',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(newCuti)},5000)
+.catch(function(){
+addPending('submitCuti', newCuti);
+updateConn(false);
+});
+
+showMsg(msgEl,'success','Pengajuan cuti '+jenis+' berhasil dikirim!');
+document.getElementById('cuti-form').reset();
+var sl=document.getElementById('cuti-start-label');if(sl)sl.innerHTML='📅 Tanggal Mulai Cuti';
+var el=document.getElementById('cuti-end-label');if(el)el.innerHTML='🗓️ Tanggal Selesai Cuti';
+renderCuti();
 }
 
-function submitCuti(){
-  var jenisEl=document.getElementById('cuti-jenis');
-  var startEl=document.getElementById('cuti-start');
-  var endEl=document.getElementById('cuti-end');
-  var alasanEl=document.getElementById('cuti-alasan');
-  var msgEl=document.getElementById('cuti-msg');
-  if(!jenisEl||!startEl||!endEl||!alasanEl) return;
+function renderCutiList(cutis){
+var container=document.getElementById('cuti-list');if(!container)return;
+var isPrivileged=isPrivilegedUser(currentUser);
+if(!cutis||cutis.length===0){container.innerHTML='<div class="empty"><i class="fas fa-folder-open"></i><p>Belum ada pengajuan cuti.</p></div>';return;}
+cutis.sort(function(a,b){return b.createdAt.localeCompare(a.createdAt);});
+var rows='';
+for(var i=0;i<cutis.length;i++){
+var c=cutis[i];
+var statusClass='badge-pending';if(c.status==='approved')statusClass='badge-approved';else if(c.status==='rejected')statusClass='badge-rejected';
 
-  var jenis=jenisEl.value;
-  var tstart=startEl.value;
-  var tend=endEl.value;
-  var alasan=alasanEl.value.trim();
+var actionHtml = '<div class="action-btn-group">';
+if(isPrivileged){
+if(c.status==='pending'){
+actionHtml += '<button class="btn-success-sm" onclick="approveCuti(\''+c.id+'\')"><i class="fas fa-check"></i> Approve</button>';
+actionHtml += '<button class="btn-danger-sm" onclick="rejectCuti(\''+c.id+'\')"><i class="fas fa-times"></i> Reject</button>';
+}
+actionHtml += '<button class="btn-icon-only" onclick="deleteCuti(\''+c.id+'\')" title="Hapus"><i class="fas fa-trash"></i></button>';
+} else {
+actionHtml += '<span style="color:var(--muted); font-size:12px;">-</span>';
+}
+actionHtml += '</div>';
 
-  if(!tstart||!tend){showMsg(msgEl,'error','Tanggal mulai dan selesai harus diisi');return;}
-  if(tend<tstart){showMsg(msgEl,'error','Tanggal selesai tidak boleh sebelum mulai');return;}
-  if(!alasan){showMsg(msgEl,'error','Alasan harus diisi');return;}
+var statusHtml = '<span class="badge-status '+statusClass+'" style="text-transform:capitalize; display:inline-block; margin-bottom:4px;">'+c.status+'</span>';
+if(c.status === 'rejected' && c.rejectReason) {
+statusHtml += '<div style="font-size:10px; color:var(--danger); max-width:150px; white-space:normal; font-style:italic; opacity:0.9; line-height:1.3;">"'+c.rejectReason+'"</div>';
+}
 
-  var cutiObj={
-    id:'cuti_'+Date.now()+'_'+Math.random().toString(36).substr(2,6),
-    userId:currentUser.id,
-    nama:currentUser.nama,
-    jabatan:currentUser.jabatan||'Staff',
-    jenisCuti:jenis,
-    tanggalMulai:tstart,
-    tanggalSelesai:tend,
-    alasan:alasan,
-    status:'pending',
-    createdAt:new Date().toISOString(),
-    rejectReason:''
-  };
-
-  var allCuti=lsG('leaveRequests',[]);if(!Array.isArray(allCuti))allCuti=[];
-  allCuti.push(cutiObj);
-  lsS('leaveRequests',allCuti);
-
-  addPending('addLeaveRequest', cutiObj);
-  fetchTO(APPS_SCRIPT_URL+'?action=addLeaveRequest',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(cutiObj)},5000)
-  .then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);}).catch(function(){});
-
-  renderCuti();
+rows+='<tr>'+
+<td style="font-weight:700">'+c.nama+'<br><small style="color:var(--muted);font-weight:500;text-transform:capitalize">'+c.jabatan+'</small></td>'+
+<td style="font-variant-numeric:tabular-nums; white-space:nowrap;">'+c.startDate+' <span style="color:var(--muted); font-weight:400;">s/d</span> '+c.endDate+'</td>'+
+<td><span class="badge-jenis-cuti">'+c.jenisCuti+'</span></td>'+
+<td style="text-align:center; font-weight:800; color:var(--accent); font-size:15px; white-space:nowrap;">'+c.totalHari+' Hari</td>'+
+<td>'+statusHtml+'</td>'+
+<td>'+actionHtml+'</td>'+
+</tr>';
+}
+container.innerHTML='<table class="custom-table"><thead><tr><th>Nama Staff</th><th>Tanggal Cuti</th><th>Jenis Cuti</th><th style="text-align:center;">Total</th><th>Status</th><th>Aksi</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
 function approveCuti(id){
-  var allCuti=lsG('leaveRequests',[]);if(!Array.isArray(allCuti))allCuti=[];
-  for(var i=0;i<allCuti.length;i++){
-    if(allCuti[i].id===id){allCuti[i].status='approved';break;}
-  }
-  lsS('leaveRequests',allCuti);
-  addPending('updateLeaveRequest', {id:id,status:'approved'});
-  fetchTO(APPS_SCRIPT_URL+'?action=updateLeaveRequest',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({id:id,status:'approved'})},5000)
-  .then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);}).catch(function(){});
-  renderCuti();
+var cutis=lsG('leaveRequests',[]);if(!Array.isArray(cutis))cutis=[];
+for(var i=0;i<cutis.length;i++){if(cutis[i].id===id){cutis[i].status='approved';break;}}
+lsS('leaveRequests',cutis);
+fetchTO(APPS_SCRIPT_URL+'?action=updateCuti',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({id:id,status:'approved'})},5000)
+.catch(function(){ addPending('updateCuti', {id:id,status:'approved'}); updateConn(false); });
+renderCuti();
 }
 
-function openRejectModal(id){
-  rejectCutiId=id;
-  document.getElementById('reject-reason').value='';
-  hideMsg(document.getElementById('reject-error'));
-  document.getElementById('reject-modal').classList.add('show');
-}
-function closeRejectModal(){
-  document.getElementById('reject-modal').classList.remove('show');
-  rejectCutiId=null;
-}
-function confirmReject(){
-  var reason=document.getElementById('reject-reason').value.trim();
-  var errEl=document.getElementById('reject-error');
-  if(!reason){showMsg(errEl,'error','Alasan penolakan harus diisi');return;}
-  if(!rejectCutiId)return;
-
-  var allCuti=lsG('leaveRequests',[]);if(!Array.isArray(allCuti))allCuti=[];
-  for(var i=0;i<allCuti.length;i++){
-    if(allCuti[i].id===rejectCutiId){allCuti[i].status='rejected';allCuti[i].rejectReason=reason;break;}
-  }
-  lsS('leaveRequests',allCuti);
-  addPending('updateLeaveRequest', {id:rejectCutiId,status:'rejected',rejectReason:reason});
-  fetchTO(APPS_SCRIPT_URL+'?action=updateLeaveRequest',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({id:rejectCutiId,status:'rejected',rejectReason:reason})},5000)
-  .then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);}).catch(function(){});
-  closeRejectModal();
-  renderCuti();
+function rejectCuti(id){
+rejectCutiId = id;
+document.getElementById('reject-reason').value = '';
+hideMsg(document.getElementById('reject-error'));
+document.getElementById('reject-modal').classList.add('show');
 }
 
-// ===== PERBAIKAN: renderRekapan dengan tombol hapus & end time di sebelah start time =====
+function closeRejectModal() {
+document.getElementById('reject-modal').classList.remove('show');
+rejectCutiId = null;
+}
+
+function confirmReject() {
+var reason = document.getElementById('reject-reason').value.trim();
+var errEl = document.getElementById('reject-error');
+if(!reason) {
+showMsg(errEl, 'error', 'Alasan reject wajib diisi!');
+return;
+}
+var cutis = lsG('leaveRequests', []);
+if(!Array.isArray(cutis))cutis=[];
+for(var i=0; i<cutis.length; i++) {
+if(cutis[i].id === rejectCutiId) {
+cutis[i].status = 'rejected';
+cutis[i].rejectReason = reason;
+break;
+}
+}
+lsS('leaveRequests', cutis);
+fetchTO(APPS_SCRIPT_URL+'?action=updateCuti', {method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({id:rejectCutiId, status:'rejected', reason:reason})}, 5000)
+.catch(function(){ addPending('updateCuti', {id:rejectCutiId, status:'rejected', reason:reason}); updateConn(false); });
+closeRejectModal();
+renderCuti();
+}
+
+function deleteCuti(id){
+if(!confirm('Yakin ingin menghapus pengajuan cuti ini?'))return;
+var cutis=lsG('leaveRequests',[]);
+if(!Array.isArray(cutis))cutis=[];
+cutis=cutis.filter(function(c){return c.id!==id;});
+lsS('leaveRequests',cutis);
+
+addDeletedId(id); // Simpan ID agar tidak dimunculkan lagi oleh server
+
+fetchTO(APPS_SCRIPT_URL+'?action=deleteCuti',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({id:id})},5000)
+.catch(function(){ addPending('deleteCuti', {id:id}); updateConn(false); });
+renderCuti();
+}
+
+// ===== REKAPAN HANYA MUNCUL TANGGAL HARI INI SECARA DEFAULT =====
 function renderRekapan(){
-  var allRecs=lsG('records',[]);if(!Array.isArray(allRecs))allRecs=[];
-  var fromEl=document.getElementById('rek-from');
-  var toEl=document.getElementById('rek-to');
-  var from=fromEl?fromEl.value:'';
-  var to=toEl?toEl.value:'';
-  var filtered=allRecs;
-  if(from){filtered=filtered.filter(function(r){return r.tanggal>=from;});}
-  if(to){filtered=filtered.filter(function(r){return r.tanggal<=to;});}
-  filtered.sort(function(a,b){return (b.tanggal||'').localeCompare(a.tanggal||'') || (b.waktuKeluar||'').localeCompare(a.waktuKeluar||'');});
-
-  var canDelete=isPrivilegedUser(currentUser);
-
-  var rows='';
-  for(var i=0;i<filtered.length;i++){
-    var r=filtered[i];
-    var badgeCls=r.isLate?'badge-telat':'badge-tepat';
-    var statusLabel=r.isLate?'TELAT':'TEPAT';
-
-    // Format waktu keluar & kembali
-    var waktuKeluar=r.waktuKeluar||'-';
-    var waktuKembali=r.waktuKembali||'-';
-
-    rows+=
-    '<tr>'+
-    '<td style="font-weight:700">'+(r.nama||'-')+'</td>'+
-    '<td>'+(r.jabatan||'-')+'</td>'+
-    '<td>'+(r.jobdesk||'-')+'</td>'+
-    '<td><span class="badge-jenis-cuti">'+(r.jenisIzinLabel||r.jenisIzin||'-')+'</span></td>'+
-    '<td>'+r.tanggal+'</td>'+
-    '<td>'+
-      '<div class="time-cell">'+
-        '<span class="t-label">Start</span>'+
-        '<span class="t-val">'+waktuKeluar+'</span>'+
-      '</div>'+
-    '</td>'+
-    '<td>'+
-      '<div class="time-cell">'+
-        '<span class="t-label">End</span>'+
-        '<span class="t-val" style="color:'+(r.isLate?'var(--danger)':'var(--success)')+'">'+waktuKembali+'</span>'+
-      '</div>'+
-    '</td>'+
-    '<td>'+(r.durasiStr||fmtDur(r.durasi||0))+'</td>'+
-    '<td><span class="badge-status '+badgeCls+'">'+statusLabel+'</span></td>'+
-    (canDelete?
-    '<td><button class="btn-icon-only" onclick="deleteRecord(\''+r.id+'\')" title="Hapus record"><i class="fas fa-trash"></i></button></td>'
-    :'')+
-    '</tr>';
-  }
-
-  var thead='<tr>'+
-    '<th>Nama</th>'+
-    '<th>Jabatan</th>'+
-    '<th>Jobdesk</th>'+
-    '<th>Jenis</th>'+
-    '<th>Tanggal</th>'+
-    '<th>Start Time</th>'+
-    '<th>End Time</th>'+
-    '<th>Durasi</th>'+
-    '<th>Status</th>'+
-    (canDelete?'<th>Aksi</th>':'')+
-    '</tr>';
-
-  var tableEl=document.getElementById('rek-table');
-  if(tableEl){
-    tableEl.innerHTML=
-    (filtered.length>0?
-    '<table class="custom-table"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table>'
-    :'<div class="empty"><i class="fas fa-inbox"></i><p>Tidak ada data rekapan.</p></div>');
-  }
+var today=todayStr();
+var fromEl=document.getElementById('rek-from');var toEl=document.getElementById('rek-to');
+if(!fromEl.value)fromEl.value=today;if(!toEl.value)toEl.value=today;
+doFilterRekapan(today,today);
 }
 
-// ===== PERBAIKAN: fungsi hapus record di rekapan =====
+function doFilterRekapan(from,to){
+var recs=lsG('records',[]);if(!Array.isArray(recs))recs=[];
+var localFiltered = recs.slice();
+if(from)localFiltered=localFiltered.filter(function(r){return r.tanggal>=from});
+if(to)localFiltered=localFiltered.filter(function(r){return r.tanggal<=to});
+
+renderRekapanTable(localFiltered);
+
+fetchTO(APPS_SCRIPT_URL+'?action=getRecords&from='+(from||'')+'&to='+(to||''),{},5000)
+.then(function(r){return r.json()})
+.then(function(d){
+if(d.success && d.records && Array.isArray(d.records)){
+updateConn(true);
+var delIds = lsG('deletedIds', []);
+if(!Array.isArray(delIds)) delIds = [];
+var serverRecs = d.records.filter(function(r){ return delIds.indexOf(r.id) === -1; });
+renderRekapanTable(serverRecs);
+}
+})
+.catch(function(){updateConn(false);});
+}
+
+function renderRekapanTable(data){
+var container=document.getElementById('rek-table');
+if(!data||data.length===0){container.innerHTML='<div class="empty"><i class="fas fa-box-open"></i><p>Tidak ada data rekapan pada rentang tanggal ini.</p></div>';return;}
+data.sort(function(a,b){var dA=a.tanggal||'';var dB=b.tanggal||'';if(dA!==dB)return dB.localeCompare(dA);return(a.waktuMulai||'').localeCompare(b.waktuMulai||'');});
+var totalIzin=data.length;var totalTepat=data.filter(function(r){return!r.isLate}).length;var totalTelat=data.filter(function(r){return r.isLate}).length;
+var statsHtml='<div class="stat-grid" style="margin-bottom: 24px;">'+
+<div class="stat-card stat-blue"><div class="stat-icon"><i class="fas fa-database"></i></div><div class="stat-value">'+totalIzin+'</div><div class="stat-label">Total Izin Keluar</div></div>'+
+<div class="stat-card stat-green"><div class="stat-icon"><i class="fas fa-check-circle"></i></div><div class="stat-value">'+totalTepat+'</div><div class="stat-label">Tepat Waktu</div></div>'+
+<div class="stat-card stat-red"><div class="stat-icon"><i class="fas fa-triangle-exclamation"></i></div><div class="stat-value">'+totalTelat+'</div><div class="stat-label">Telat Kembali</div></div>'+
+</div>';
+
+var isPrivileged=isPrivilegedUser(currentUser);
+var rows='';
+for(var i=0;i<data.length;i++){
+var r=data[i];var statusClass=r.isLate?'badge-telat':'badge-tepat';var statusText=r.isLate?'TELAT':'TEPAT';
+var telatInfo=r.isLate?'<span style="color:var(--danger);font-weight:700;font-size:11px">('+fmtDur(r.telatDetik||r.telatMenit||0)+' telat)</span>':'';
+rows+='<tr><td>'+(r.tanggal||'-')+'</td><td style="font-weight:700">'+(r.nama||'-')+'</td><td><span style="background:var(--accent-dim);color:var(--accent);padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700">'+(r.jabatan||'-')+'</span></td><td>'+(r.jobdesk||'-')+'</td><td>'+(r.jenisIzinLabel||r.jenisIzin||'-')+'</td><td style="font-variant-numeric:tabular-nums">'+(r.waktuMulai||'-')+'</td><td style="font-variant-numeric:tabular-nums">'+(r.waktuSelesai||'-')+'</td><td>'+fmtDur(r.durasiAktual||0)+'</td><td><span class="badge-status '+statusClass+'">'+statusText+'</span> '+telatInfo+'</td>';
+if(isPrivileged){
+rows+='<td><button class="btn-danger-sm" onclick="deleteRecord(\''+r.id+'\')"><i class="fas fa-trash"></i> Hapus</button></td>';
+}
+rows+='</tr>';
+}
+var header='<table class="custom-table"><thead><tr><th>Tanggal</th><th>Nama</th><th>Jabatan</th><th>Jobdesk</th><th>Jenis Izin</th><th>Mulai</th><th>Selesai</th><th>Durasi Aktual</th><th>Status</th>';
+if(isPrivileged) header+='<th>Aksi</th>';
+header+='</tr></thead><tbody>'+rows+'</tbody></table>';
+
+container.innerHTML=statsHtml+header;
+}
+
 function deleteRecord(id){
-  if(!confirm('Yakin hapus record izin ini? Data yang dihapus tidak bisa dikembalikan.')) return;
+if(!confirm('Yakin ingin menghapus data rekapan izin ini?'))return;
+var recs=lsG('records',[]);if(!Array.isArray(recs))recs=[];
+recs=recs.filter(function(r){return r.id!==id;});
+lsS('records',recs);
 
-  var allRecs=lsG('records',[]);if(!Array.isArray(allRecs))allRecs=[];
-  var newRecs=[];
-  for(var i=0;i<allRecs.length;i++){
-    if(allRecs[i].id===id){
-      addDeletedId(id);
-      addPending('deleteRecord', {id:id});
-    } else {
-      newRecs.push(allRecs[i]);
-    }
-  }
-  lsS('records',newRecs);
+addDeletedId(id); // Simpan ID agar tidak dimunculkan lagi oleh server
 
-  // Kirim ke server
-  fetchTO(APPS_SCRIPT_URL+'?action=deleteRecord',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({id:id})},5000)
-  .then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);}).catch(function(){});
-
-  renderRekapan();
+fetchTO(APPS_SCRIPT_URL+'?action=deleteRecord',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({id:id})},5000)
+.catch(function(){ addPending('deleteRecord', {id:id}); updateConn(false); });
+var from=document.getElementById('rek-from').value,to=document.getElementById('rek-to').value,mergedRecs=recs;
+if(from)mergedRecs=mergedRecs.filter(function(r){return r.tanggal>=from});
+if(to)mergedRecs=mergedRecs.filter(function(r){return r.tanggal<=to});
+renderRekapanTable(mergedRecs);
 }
 
-document.getElementById('rek-filter-btn').addEventListener('click',function(){renderRekapan();});
+function renderAddUser(){renderSettingsPanel();renderUserTable();}
 
-function renderAddUser(){
-  renderUserTable();
-  renderSettingsPanel();
+function renderSettingsPanel(){
+var panel=document.getElementById('settings-panel');if(!panel)return;
+var settingsK=getMaxKeluar();
+var settingsC=getMaxCuti();
+var settingsJ=getMaxJenis();
+
+var html='<h4 style="margin-bottom:10px; color:var(--accent); font-size:14px; font-weight:800;">Max Frekuensi Izin per Jenis (Harian)</h4>';
+for(var i=0;i<JENIS_IZIN.length;i++){
+var jI=JENIS_IZIN[i];
+var valJ=settingsJ[jI.value]||1;
+html+='<div class="setting-row"><label><i class="fas fa-stopwatch" style="margin-right:6px;color:var(--accent)"></i>Max '+jI.label+'</label><input type="number" id="max-jenis-'+jI.value+'" value="'+valJ+'" min="0" max="10"><span class="unit">kali</span></div>';
+}
+
+html+='<hr style="border-color:var(--border); margin:20px 0;"><h4 style="margin-bottom:10px; color:var(--accent); font-size:14px; font-weight:800;">Max Izin Keluar per Jabatan (Harian)</h4>';
+for(var i=0;i<JABATAN_LIST.length;i++){
+var jab=JABATAN_LIST[i];
+var valK=settingsK[jab]||1;
+html+='<div class="setting-row"><label><i class="fas fa-briefcase" style="margin-right:6px;color:var(--accent)"></i>Max Keluar '+jab+'</label><input type="number" id="max-keluar-'+jab.replace(/\s/g,'-')+'" value="'+valK+'" min="0" max="10"><span class="unit">orang</span></div>';
+}
+
+html+='<hr style="border-color:var(--border); margin:20px 0;"><h4 style="margin-bottom:10px; color:var(--accent); font-size:14px; font-weight:800;">Max Cuti per Jabatan (Bulanan)</h4>';
+for(var j=0;j<JABATAN_LIST.length;j++){
+var jabC=JABATAN_LIST[j];
+var valC=settingsC[jabC]||1;
+html+='<div class="setting-row"><label><i class="fas fa-plane-departure" style="margin-right:6px;color:var(--accent)"></i>Max Cuti '+jabC+'</label><input type="number" id="max-cuti-'+jabC.replace(/\s/g,'-')+'" value="'+valC+'" min="0" max="20"><span class="unit">orang</span></div>';
+}
+html+='<button class="btn btn-primary" style="margin-top:10px" id="btn-save-settings"><i class="fas fa-save"></i>Simpan Pengaturan</button>';
+panel.innerHTML=html;
+var saveBtn=document.getElementById('btn-save-settings');
+if(saveBtn)saveBtn.addEventListener('click',function(){
+var newSettingsK={};var newSettingsC={};var newSettingsJ={};
+for(var i=0;i<JABATAN_LIST.length;i++){
+var jab=JABATAN_LIST[i];
+var inputK=document.getElementById('max-keluar-'+jab.replace(/\s/g,'-'));
+var inputC=document.getElementById('max-cuti-'+jab.replace(/\s/g,'-'));
+newSettingsK[jab]=inputK?parseInt(inputK.value)||1:1;
+newSettingsC[jab]=inputC?parseInt(inputC.value)||1:1;
+}
+for(var i=0;i<JENIS_IZIN.length;i++){
+var jI=JENIS_IZIN[i];
+var inputJ=document.getElementById('max-jenis-'+jI.value);
+newSettingsJ[jI.value]=inputJ?parseInt(inputJ.value)||1:1;
+}
+lsS('maxKeluar',newSettingsK);
+lsS('maxCuti',newSettingsC);
+lsS('maxJenis',newSettingsJ);
+fetchTO(APPS_SCRIPT_URL+'?action=saveSettings',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({maxKeluar:newSettingsK, maxCuti:newSettingsC, maxJenis:newSettingsJ})},5000)
+.then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true)})
+.catch(function(){ addPending('saveSettings', {maxKeluar:newSettingsK, maxCuti:newSettingsC, maxJenis:newSettingsJ}); updateConn(false); });
+alert('Pengaturan berhasil disimpan!');
+});
 }
 
 function renderUserTable(){
-  var users=lsG('users',[]);if(!Array.isArray(users))users=[];
-  var rows='';
-  for(var i=0;i<users.length;i++){
-    var u=users[i];
-    if(u.username==='admin') continue;
-    rows+=
-    '<tr>'+
-    '<td style="font-weight:700">'+u.nama+'</td>'+
-    '<td>'+u.username+'</td>'+
-    '<td>'+(u.jabatan||'-')+'</td>'+
-    '<td>'+u.role+'</td>'+
-    '<td>'+(u.ip||'*')+'</td>'+
-    '<td><button class="btn-icon-only" onclick="deleteUser(\''+u.id+'\')"><i class="fas fa-trash"></i></button></td>'+
-    '</tr>';
-  }
-  var el=document.getElementById('user-table');
-  if(el){
-    el.innerHTML=
-    '<table class="custom-table"><thead><tr><th>Nama</th><th>Username</th><th>Jabatan</th><th>Role</th><th>IP</th><th>Aksi</th></tr></thead><tbody>'+rows+'</tbody></table>';
-  }
+var container=document.getElementById('user-table');if(!container)return;var users=lsG('users',[]);if(!Array.isArray(users))users=[];
+var displayUsers=users.filter(function(u){return u.id!=='admin_bawaan'});
+if(displayUsers.length===0){container.innerHTML='<div class="empty"><i class="fas fa-users"></i><p>Belum ada staff terdaftar.</p></div>';return;}
+
+var isPrivileged=isPrivilegedUser(currentUser);
+var rows='';
+for(var i=0;i<displayUsers.length;i++){
+var u=displayUsers[i];
+rows+='<tr><td style="font-weight:700">'+(u.nama||'-')+'</td><td>'+(u.username||'-')+'</td><td>'+(u.ip||'-')+'</td><td><span style="background:var(--accent-dim);color:var(--accent);padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700">'+(u.jabatan||'-')+'</span></td><td style="text-transform:capitalize">'+(u.role||'staff')+'</td>';
+if(isPrivileged){
+rows+='<td><button class="btn-danger-sm" data-uid="'+u.id+'" onclick="deleteUser(this.getAttribute(\'data-uid\'))"><i class="fas fa-trash"></i> Hapus</button></td>';
+} else {
+rows+='<td><span style="color:var(--muted)">-</span></td>';
+}
+rows+='</tr>';
+}
+var header='<table class="custom-table" style="margin-top:0"><thead><tr><th>Nama</th><th>Username</th><th>IP</th><th>Jabatan</th><th>Role</th>';
+if(isPrivileged) header+='<th>Aksi</th>';
+header+='</tr></thead><tbody>'+rows+'</tbody></table>';
+container.innerHTML = header;
 }
 
-function renderSettingsPanel(){
-  var panel=document.getElementById('settings-panel');
-  if(!panel) return;
-  var maxKeluar=getMaxKeluar();
-  var maxCuti=getMaxCuti();
-  var maxJenis=getMaxJenis();
-
-  var html='<p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Maksimal izin keluar per hari per jabatan:</p>';
-  for(var i=0;i<JABATAN_LIST.length;i++){
-    var j=JABATAN_LIST[i];
-    html+='<div class="setting-row"><label>'+j+'</label><input type="number" min="1" max="10" value="'+(maxKeluar[j]||1)+'" data-setting="maxKeluar" data-key="'+j+'"></div>';
-  }
-  html+='<p style="font-size:12px;color:var(--muted);margin-bottom:14px;margin-top:16px;">Maksimal cuti per bulan per jabatan:</p>';
-  for(var k=0;k<JABATAN_LIST.length;k++){
-    var j2=JABATAN_LIST[k];
-    html+='<div class="setting-row"><label>'+j2+'</label><input type="number" min="1" max="30" value="'+(maxCuti[j2]||1)+'" data-setting="maxCuti" data-key="'+j2+'"></div>';
-  }
-  html+='<p style="font-size:12px;color:var(--muted);margin-bottom:14px;margin-top:16px;">Maksimal per jenis izin per hari:</p>';
-  for(var m=0;m<JENIS_IZIN.length;m++){
-    var ji=JENIS_IZIN[m];
-    html+='<div class="setting-row"><label>'+ji.label+'</label><input type="number" min="1" max="10" value="'+(maxJenis[ji.value]||1)+'" data-setting="maxJenis" data-key="'+ji.value+'"></div>';
-  }
-  html+='<button class="btn btn-primary" style="margin-top:16px;" onclick="saveSettings()"><i class="fas fa-save"></i> Simpan Pengaturan</button>';
-  panel.innerHTML=html;
+function deleteUser(uid){
+if(!confirm('Yakin ingin menghapus staff ini?'))return;
+var users=lsG('users',[]);if(!Array.isArray(users))users=[];users=users.filter(function(u){return u.id!==uid;});lsS('users',users);
+addDeletedId(uid);
+fetchTO(APPS_SCRIPT_URL+'?action=deleteUser',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({id:uid})},5000)
+.catch(function(){ addPending('deleteUser', {id:uid}); updateConn(false); });
+renderUserTable();
 }
 
-function saveSettings(){
-  var maxKeluar=getMaxKeluar();
-  var maxCuti=getMaxCuti();
-  var maxJenis=getMaxJenis();
-  var inputs=document.querySelectorAll('#settings-panel input[data-setting]');
-  for(var i=0;i<inputs.length;i++){
-    var inp=inputs[i];
-    var setting=inp.getAttribute('data-setting');
-    var key=inp.getAttribute('data-key');
-    var val=parseInt(inp.value)||1;
-    if(val<1) val=1;
-    if(setting==='maxKeluar') maxKeluar[key]=val;
-    else if(setting==='maxCuti') maxCuti[key]=val;
-    else if(setting==='maxJenis') maxJenis[key]=val;
-  }
-  lsS('maxKeluar',maxKeluar);
-  lsS('maxCuti',maxCuti);
-  lsS('maxJenis',maxJenis);
-  addPending('saveSettings', {maxKeluar:maxKeluar,maxCuti:maxCuti,maxJenis:maxJenis});
-  fetchTO(APPS_SCRIPT_URL+'?action=saveSettings',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({maxKeluar:maxKeluar,maxCuti:maxCuti,maxJenis:maxJenis})},5000)
-  .then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);}).catch(function(){});
-  alert('Pengaturan tersimpan!');
+// TOGGLE JABATAN BERDASARKAN ROLE
+var auRole = document.getElementById('au-role');
+var auJabatanGroup = document.getElementById('au-jabatan-group');
+if(auRole && auJabatanGroup) {
+auRole.addEventListener('change', function() {
+if(this.value === 'leader') {
+auJabatanGroup.style.display = 'none';
+} else {
+auJabatanGroup.style.display = 'block';
 }
-
-function deleteUser(id){
-  if(!confirm('Yakin hapus user ini?')) return;
-  var users=lsG('users',[]);if(!Array.isArray(users))users=[];
-  var newUsers=[];
-  for(var i=0;i<users.length;i++){
-    if(users[i].id===id){
-      addDeletedId(id);
-      addPending('deleteUser', {id:id});
-    } else {
-      newUsers.push(users[i]);
-    }
-  }
-  lsS('users',newUsers);
-  fetchTO(APPS_SCRIPT_URL+'?action=deleteUser',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({id:id})},5000)
-  .then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);}).catch(function(){});
-  renderUserTable();
+});
 }
 
 document.getElementById('adduser-form').addEventListener('submit',function(e){
-  e.preventDefault();
-  var namaEl=document.getElementById('au-nama');
-  var unEl=document.getElementById('au-username');
-  var pwEl=document.getElementById('au-password');
-  var ipEl=document.getElementById('au-ip');
-  var roleEl=document.getElementById('au-role');
-  var jabatanEl=document.getElementById('au-jabatan');
-  var errEl=document.getElementById('au-error');
-  var sucEl=document.getElementById('au-success');
-  hideMsg(errEl);hideMsg(sucEl);
+e.preventDefault();
+var errEl=document.getElementById('au-error');var succEl=document.getElementById('au-success');hideMsg(errEl);hideMsg(succEl);
+var nama=document.getElementById('au-nama').value.trim();
+var username=document.getElementById('au-username').value.trim();
+var password=document.getElementById('au-password').value.trim();
+var ip=document.getElementById('au-ip').value.trim();
+var role=document.getElementById('au-role').value;
+var jabatan=document.getElementById('au-jabatan').value;
 
-  var nama=namaEl.value.trim();
-  var un=unEl.value.trim();
-  var pw=pwEl.value.trim();
-  var ip=ipEl.value.trim();
-  var role=roleEl.value;
-  var jabatan=jabatanEl.value;
+if(role === 'leader') {
+jabatan = 'Leader';
+} else {
+if(!jabatan) {
+showMsg(errEl,'error','Semua field harus diisi');
+return;
+}
+}
 
-  if(!nama||!un||!pw||!ip){showMsg(errEl,'error','Semua field harus diisi');return;}
+if(!nama||!username||!password||!role){
+showMsg(errEl,'error','Semua field harus diisi');
+return;
+}
 
-  var users=lsG('users',[]);if(!Array.isArray(users))users=[];
-  for(var i=0;i<users.length;i++){
-    if(users[i].username.toLowerCase()===un.toLowerCase()){showMsg(errEl,'error','Username sudah dipakai');return;}
-  }
+var users=lsG('users',[]);if(!Array.isArray(users))users=[];
+for(var i=0;i<users.length;i++){if(users[i].username.toLowerCase()===username.toLowerCase()){showMsg(errEl,'error','Username sudah digunakan');return;}}
+var newUser={id:Date.now().toString(36)+Math.random().toString(36).substr(2,5),nama:nama,username:username,password:password,ip:ip||'*',jabatan:jabatan,role:role,createdAt:new Date().toISOString()};
+users.push(newUser);lsS('users',users);
 
-  var newUser={
-    id:'u_'+Date.now()+'_'+Math.random().toString(36).substr(2,6),
-    nama:nama,
-    username:un,
-    password:pw,
-    ip:ip,
-    jabatan:jabatan||'Staff',
-    role:role,
-    createdAt:new Date().toISOString()
-  };
+fetchTO(APPS_SCRIPT_URL+'?action=addUser',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(newUser)},5000)
+.then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);})
+.catch(function(){ addPending('addUser', newUser); updateConn(false); });
 
-  users.push(newUser);
-  lsS('users',users);
-  addPending('addUser', newUser);
-  fetchTO(APPS_SCRIPT_URL+'?action=addUser',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(newUser)},5000)
-  .then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);}).catch(function(){});
-
-  namaEl.value='';unEl.value='';pwEl.value='';ipEl.value='';
-  showMsg(sucEl,'success','Staff berhasil ditambahkan!');
-  renderUserTable();
-});
-
-document.getElementById('au-role').addEventListener('change',function(){
-  var jabatanGroup=document.getElementById('au-jabatan-group');
-  if(this.value==='admin'||this.value==='leader'){
-    jabatanGroup.style.display='none';
-  } else {
-    jabatanGroup.style.display='block';
-  }
+showMsg(succEl,'success','Staff '+nama+' berhasil ditambahkan!');
+document.getElementById('au-nama').value='';document.getElementById('au-username').value='';document.getElementById('au-password').value='';document.getElementById('au-ip').value='';document.getElementById('au-jabatan').value='';document.getElementById('au-role').value='staff';
+if(auJabatanGroup) auJabatanGroup.style.display = 'block';
+renderUserTable();
 });
 
 function renderSetIp(){
-  var users=lsG('users',[]);if(!Array.isArray(users))users=[];
-  var rows='';
-  for(var i=0;i<users.length;i++){
-    var u=users[i];
-    rows+=
-    '<tr>'+
-    '<td style="font-weight:700">'+u.nama+'</td>'+
-    '<td>'+u.username+'</td>'+
-    '<td>'+(u.ip||'*')+'</td>'+
-    '</tr>';
-  }
-  var el=document.getElementById('setip-user-list');
-  if(el){
-    el.innerHTML='<table class="custom-table"><thead><tr><th>Nama</th><th>Username</th><th>IP</th></tr></thead><tbody>'+rows+'</tbody></table>';
-  }
+var container=document.getElementById('setip-user-list');
+if(container){
+var users=lsG('users',[]);if(!Array.isArray(users))users=[];
+var rows='';
+for(var i=0;i<users.length;i++){
+var u=users[i];
+rows+='<tr><td style="font-weight:700">'+(u.nama||'-')+'</td><td>'+(u.username||'-')+'</td><td><span style="background:var(--info-dim);color:var(--info);padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700">'+(u.ip||'*')+'</span></td></tr>';
+}
+container.innerHTML='<table class="custom-table" style="margin-top:0"><thead><tr><th>Nama</th><th>Username</th><th>IP Saat Ini</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
 }
 
 document.getElementById('setip-form').addEventListener('submit',function(e){
-  e.preventDefault();
-  var ipEl=document.getElementById('setip-input');
-  var msgEl=document.getElementById('setip-msg');
-  var newIp=ipEl.value.trim();
-  if(!newIp){showMsg(msgEl,'error','IP tidak boleh kosong');return;}
+e.preventDefault();
+var ip=document.getElementById('setip-input').value.trim();
+var msgEl=document.getElementById('setip-msg');hideMsg(msgEl);
+if(!ip){showMsg(msgEl,'error','IP address harus diisi');return;}
 
-  var users=lsG('users',[]);if(!Array.isArray(users))users=[];
-  for(var i=0;i<users.length;i++){
-    users[i].ip=newIp;
-  }
-  lsS('users',users);
-  addPending('setAllIp', {ip:newIp});
-  fetchTO(APPS_SCRIPT_URL+'?action=setAllIp',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({ip:newIp})},5000)
-  .then(function(r){return r.json()}).then(function(d){if(d.success)updateConn(true);}).catch(function(){});
+var users=lsG('users',[]);if(!Array.isArray(users))users=[];
+var count=0;
+for(var i=0;i<users.length;i++){
+users[i].ip=ip;count++;
+fetchTO(APPS_SCRIPT_URL+'?action=addUser',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(users[i])},5000)
+.catch(function(){ addPending('addUser', users[i]); updateConn(false); });
+}
+lsS('users',users);
 
-  msgEl.className='msg msg-success show';
-  msgEl.querySelector('i').className='fas fa-circle-check';
-  msgEl.querySelector('span').textContent='IP berhasil diterapkan ke semua user!';
-  ipEl.value='';
-  renderSetIp();
-  setTimeout(function(){msgEl.classList.remove('show');},5000);
+showMsg(msgEl,'success','✅ IP "'+ip+'" berhasil diterapkan ke '+count+' user!');
+document.getElementById('setip-input').value='';
+renderSetIp();
 });
+
+document.getElementById('rek-filter-btn').addEventListener('click',function(){var from=document.getElementById('rek-from').value;var to=document.getElementById('rek-to').value;doFilterRekapan(from,to);});
 
 init();
 </script>
